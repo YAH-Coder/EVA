@@ -1,6 +1,7 @@
 import java.util.Date;
 
 public class Event {
+    private int ID;
     private String name;
     private String location;
     private Date date;
@@ -9,7 +10,11 @@ public class Event {
     public Event(String name, String location, Date date, int nmbTickets) {
         this.name = name;
         this.location = location;
+        if(date.toInstant().isAfter())
         this.date = date;
+        if(nmbTickets < 0) {
+            throw new RuntimeException("nmbTickets cannot be less than 0");
+        }
         this.nmbTickets = nmbTickets;
     }
 
@@ -32,5 +37,8 @@ public class Event {
 
     public int getNmbTickets() {
         return nmbTickets;
+    }
+    public int getID() {
+        return ID;
     }
 }
