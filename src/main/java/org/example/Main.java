@@ -4,13 +4,26 @@ import java.util.Date;
 
 public class Main {
 
-    private static Event event1 = new Event("Event1", "Uni Leipzig", new Date(125, 3, 10), 10);
 
     public static void main(String[] args) {
-        System.out.println(event1.getName());
-        System.out.println(event1.getLocation());
-        System.out.println(event1.getDate());
-        System.out.println(event1.getNmbTickets());
-        System.out.println(event1);
+        EventService eventService = new EventService();
+        try {
+            Event event1 = new Event(1, "Concert", "Berlin", new Date(125, 3, 18), 10);
+            Event event2 = new Event(2, "Theater", "Hamburg", new Date(125, 3, 20), 10);
+            Event event3 = new Event(3, "Conference", "Munich", new Date(125, 3, 30), 10);
+
+            eventService.add(event1);
+            eventService.add(event2);
+            eventService.add(event3);
+
+            eventService.get(1).setName("Cinema");
+            eventService.get(2).setLocation("Leipzig");
+            eventService.delete(3);
+
+            System.out.println(eventService.get(1));
+            System.out.println(eventService.get(2));
+        } catch (Exception e) {
+            System.out.println(e);
+        }
     }
 }
