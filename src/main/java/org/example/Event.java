@@ -9,13 +9,13 @@ import java.util.Date;
 @Getter
 @Setter
 public class Event {
-    private int id;
+    private long id;
     private String name;
     private String location;
     private Date date;
     private int nmbTickets;
 
-    public Event(int id, String name, String location, Date date, int nmbTickets) {
+    public Event(long id, String name, String location, Date date, int nmbTickets) {
         this.id = id;
         this.name = name;
         this.location = location;

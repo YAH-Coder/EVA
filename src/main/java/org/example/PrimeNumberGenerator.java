@@ -1,7 +1,5 @@
 package org.example;
 
-import lombok.AllArgsConstructor;
-
 import java.util.Iterator;
 import java.util.stream.IntStream;
 
