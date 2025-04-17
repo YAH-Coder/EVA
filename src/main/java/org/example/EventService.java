@@ -1,6 +1,6 @@
 package org.example;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 
 ;
@@ -13,7 +13,7 @@ public class EventService {
         idService = new IDService();
     }
 
-    public void add(String name, String location, Date date, Integer nmbTickets) {
+    public void add(String name, String location, LocalDateTime date, Integer nmbTickets) {
         long id = idService.getNew();
         Event event = new Event(id, name, location, date, nmbTickets);
         events.put(id, event);

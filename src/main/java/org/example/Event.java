@@ -1,25 +1,23 @@
 package org.example;
 
 import lombok.Getter;
-import lombok.Setter;
 
 import java.time.Instant;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
-@Setter
 public class Event {
     private long id;
     private String name;
     private String location;
-    private Date date;
+    private LocalDateTime date;
     private int nmbTickets;
 
-    public Event(long id, String name, String location, Date date, int nmbTickets) {
-        this.id = id;
+    public Event(long id, String name, String location, LocalDateTime date, int nmbTickets) {
+
         this.name = name;
         this.location = location;
-        if (date.toInstant().isAfter(Instant.now())) {
+        if (date.isAfter(LocalDateTime.now())) {
             this.date = date;
         } else {
             throw new RuntimeException("date needs to be in the future");
@@ -41,6 +39,6 @@ public class Event {
 
     @Override
     public String toString() {
-        return "Name: " + name + "\n" + "Location: " + location + "\n" + "Date: " + date + "\n" + "Number of Tickets: " + nmbTickets;
+        return "Id: " + id + "Name: " + name + "\n" + "Location: " + location + "\n" + "Date: " + date + "\n" + "Number of Tickets: " + nmbTickets;
     }
 }
