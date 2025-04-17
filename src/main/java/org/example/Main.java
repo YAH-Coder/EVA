@@ -25,5 +25,10 @@ public class Main {
         } catch (Exception e) {
             System.out.println(e);
         }
+
+        PrimeNumberGenerator test = new PrimeNumberGenerator(1_000_000_000);
+        for (int i = 0; i < 100; i++) {
+            System.out.println(test.iterator().next());
+        }
     }
 }

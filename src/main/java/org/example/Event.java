@@ -31,6 +31,14 @@ public class Event {
         }
     }
 
+    public Event(Event event) {
+        this.id = event.id;
+        this.name = event.name;
+        this.location = event.location;
+        this.date = event.date;
+        this.nmbTickets = event.nmbTickets;
+    }
+
     @Override
     public String toString() {
         return "Name: " + name + "\n" + "Location: " + location + "\n" + "Date: " + date + "\n" + "Number of Tickets: " + nmbTickets;
