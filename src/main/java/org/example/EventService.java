@@ -2,40 +2,64 @@ package org.example;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
 
-;
 public class EventService {
-    private HashMap<Long, Event> events ;
+    private HashMap<Long, Event> events;
     private IDService idService;
 
     public EventService() {
-        events = new HashMap<>();
-        idService = new IDService();
+        this.events = new HashMap<>();
+        this.idService = new IDService();
     }
 
-    public void add(String name, String location, LocalDateTime date, Integer nmbTickets) {
+    public Event add(String name, String location, LocalDateTime date, int nmbTickets) {
         long id = idService.getNew();
         Event event = new Event(id, name, location, date, nmbTickets);
         events.put(id, event);
+        return event;
     }
 
     public Event get(long id) {
-        return events.get(id);
+        Event event = events.get(id);
+        if (event == null) {
+            throw new NoSuchElementException("No event found with ID " + id);
+        }
+        return event;
     }
 
-    public void update(Event event) {
-        events.replace(event.getId(),event);
+    public void update(long id, String name, String location, LocalDateTime date, int nmbTickets) {
+        Event event = get(id);
+        event.setName(name);
+        event.setLocation(location);
+        event.setDate(date);
+        event.setNmbTickets(nmbTickets);
     }
+
     public void delete(long id) {
-        idService.delete(id);
+        if (!events.containsKey(id)) {
+            throw new NoSuchElementException("No event found with ID " + id);
+        }
         events.remove(id);
+        idService.delete(id);
     }
 
     public Event[] getAllEvents() {
         return events.values().toArray(new Event[events.size()]);
     }
 
+    public void deleteAll() {
+        for (Long id : events.keySet()) {
+            idService.delete(id);
+        }
+        events.clear();
+    }
+
     public void printAll() {
+        if (events.isEmpty()) {
+            System.out.println("No events available.");
+            return;
+        }
         for (Event event : events.values()) {
             System.out.println(event);
             System.out.println("===============");

@@ -1,26 +1,30 @@
 package org.example;
 
 import java.util.HashSet;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 public class IDService {
-    private HashSet<Long> primes;
-    private PrimeNumberGenerator generator ;
+    private final Set<Long> ids;
+    private final PrimeNumberGenerator generator;
 
     public IDService() {
-       primes = new HashSet<Long>();
-       generator = new PrimeNumberGenerator(1_000_000_000L);
+        this.ids = new HashSet<>();
+        this.generator = new PrimeNumberGenerator(1_000_000_000L);
     }
 
-    public long getNew(){
-        long prime = generator.iterator().next();
-        primes.add(prime);
+    public long getNew() {
+        long prime;
+        do {
+            prime = generator.nextPrime();
+        } while (ids.contains(prime));
+        ids.add(prime);
         return prime;
     }
-    public void delete(long prime) {
-        primes.remove(prime);
-    }
 
-    public Long[] getPrimes() {
-        return primes.toArray(new Long[primes.size()]);
+    public void delete(long id) {
+        if (!ids.remove(id)) {
+            throw new NoSuchElementException("ID " + id + " not managed by IDService");
+        }
     }
 }
