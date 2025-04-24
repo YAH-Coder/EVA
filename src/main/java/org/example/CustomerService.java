@@ -7,11 +7,20 @@ import java.util.NoSuchElementException;
 public class CustomerService {
     private final HashMap<Long, Customer> customers;
     private final IDService idService;
+    private static CustomerService INSTANCE;
 
-    public CustomerService() {
+    private CustomerService() {
         this.customers = new HashMap<>();
         this.idService = new IDService();
     }
+
+    public static CustomerService getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new CustomerService();
+        }
+        return INSTANCE;
+    }
+
 
     public Customer add(String username, String email, LocalDateTime birthday) {
         long id = idService.getNew();

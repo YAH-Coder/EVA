@@ -7,10 +7,18 @@ import java.util.NoSuchElementException;
 public class EventService {
     private final HashMap<Long, Event> events;
     private final IDService idService;
+    private static EventService INSTANCE;
 
-    public EventService() {
+    private EventService() {
         this.events = new HashMap<>();
         this.idService = new IDService();
+    }
+
+    public static EventService getInstance() {
+        if(INSTANCE == null){
+            INSTANCE = new EventService();
+        }
+        return INSTANCE;
     }
 
     public Event add(String name, String location, LocalDateTime date, int nmbTickets) {

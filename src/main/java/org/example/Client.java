@@ -11,7 +11,7 @@ public class Client {
 
     public Client() {
         scanner = new Scanner(System.in);
-        eventService = new EventService();
+        eventService = EventService.getInstance();
         customerService = new CustomerService();
     }
 
