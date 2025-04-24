@@ -7,10 +7,12 @@ import java.util.Scanner;
 public class Client {
     private final Scanner scanner;
     private final EventService eventService;
+    private final CustomerService customerService;
 
     public Client() {
         scanner = new Scanner(System.in);
         eventService = new EventService();
+        customerService = new CustomerService();
     }
 
     private void help() {
@@ -20,6 +22,12 @@ public class Client {
         System.out.println("(d) - delete Event by ID");
         System.out.println("(a) - show all Events");
         System.out.println("(da) - delete all Events");
+        System.out.println("(nc) - create new Customer");
+        System.out.println("(gc) - get Customer by ID");
+        System.out.println("(cc) - change Customer by ID");
+        System.out.println("(dc) - delete Customer by ID");
+        System.out.println("(ac) - show all Customers");
+        System.out.println("(dac) - delete all Customers");
         System.out.println("(h) - show help");
         System.out.println("(q) - quit");
     }
