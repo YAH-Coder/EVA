@@ -1,6 +1,7 @@
 package org.example;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 public class Customer {
     private long id;
@@ -10,17 +11,23 @@ public class Customer {
 
     public Customer(long id, String username, String email, LocalDateTime birthday) {
         this.id = id;
-        this.username = username;
-        if(checkEmail(email)){
-            this.email = email;
-        } else {
-            throw new IllegalArgumentException("Invalid email");
+
+        this.username = Objects.requireNonNull(username, "username must not be null").trim();
+        if (this.username.isBlank()) {
+            throw new IllegalArgumentException("username must not be blank");
         }
-        if(checkBirthday(birthday)){
-            this.birthday = birthday;
-        } else {
+
+        String emailTrimmed = Objects.requireNonNull(email, "email must not be null").trim();
+        if (emailTrimmed.isBlank() || !checkEmail(emailTrimmed)) {
+            throw new IllegalArgumentException("Invalid or blank email");
+        }
+        this.email = emailTrimmed;
+
+        Objects.requireNonNull(birthday, "birthday must not be null");
+        if (!checkBirthday(birthday)) {
             throw new IllegalArgumentException("Customer must be at least 18 years old");
         }
+        this.birthday = birthday;
     }
 
     public Customer(Customer other) {
@@ -32,7 +39,11 @@ public class Customer {
     }
 
     public void setUsername(String username) {
-        this.username = username;
+        String uname = Objects.requireNonNull(username, "username must not be null").trim();
+        if (uname.isBlank()) {
+            throw new IllegalArgumentException("username must not be blank");
+        }
+        this.username = uname;
     }
 
     public String getEmail() {
@@ -40,11 +51,11 @@ public class Customer {
     }
 
     public void setEmail(String email) {
-        if(checkEmail(email)){
-            this.email = email;
-        } else {
-            throw new IllegalArgumentException("Invalid email");
+        String emailTrimmed = Objects.requireNonNull(email, "email must not be null").trim();
+        if (emailTrimmed.isBlank() || !checkEmail(emailTrimmed)) {
+            throw new IllegalArgumentException("Invalid or blank email");
         }
+        this.email = emailTrimmed;
     }
 
     public LocalDateTime getBirthday() {
@@ -52,16 +63,17 @@ public class Customer {
     }
 
     public void setBirthday(LocalDateTime birthday) {
-        if(checkBirthday(birthday)){
-            this.birthday = birthday;
-        } else {
+        Objects.requireNonNull(birthday, "birthday must not be null");
+        if (!checkBirthday(birthday)) {
             throw new IllegalArgumentException("Customer must be at least 18 years old");
         }
+        this.birthday = birthday;
     }
 
     public long getId() {
         return id;
     }
+
     private boolean checkEmail(String email) {
         String[] result1 = email.split("@");
         if (result1.length != 2) {
@@ -80,6 +92,7 @@ public class Customer {
     private boolean checkBirthday(LocalDateTime birthday) {
         return birthday.isBefore(LocalDateTime.now().minusYears(18));
     }
+
     @Override
     public String toString() {
         return "Customer:" +
