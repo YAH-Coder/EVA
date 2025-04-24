@@ -13,7 +13,13 @@ public class Event {
         this.id = id;
         this.name = name;
         this.location = location;
+        if (!date.isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Date must be in the future");
+        }
         this.date = date;
+        if (nmbTickets < 0) {
+            throw new IllegalArgumentException("Number of tickets cannot be negative");
+        }
         this.nmbTickets = nmbTickets;
     }
 

@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.NoSuchElementException;
 
 public class EventService {
-    private HashMap<Long, Event> events;
-    private IDService idService;
+    private final HashMap<Long, Event> events;
+    private final IDService idService;
 
     public EventService() {
         this.events = new HashMap<>();
