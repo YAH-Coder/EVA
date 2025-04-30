@@ -12,7 +12,7 @@ public class Client {
     public Client() {
         scanner = new Scanner(System.in);
         eventService = EventService.getInstance();
-        customerService = new CustomerService();
+        customerService = CustomerService.getInstance();
     }
 
     private void help() {
