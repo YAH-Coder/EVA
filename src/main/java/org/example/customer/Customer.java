@@ -34,10 +34,6 @@ public class Customer {
         this.tickets = new HashMap<Long, HashSet<Long>>();
     }
 
-    public Customer(Customer other) {
-        this(other.id, other.username, other.email, other.birthday);
-    }
-
     public void addTicket(long eventId, long ticketId) {
         if (tickets.containsKey(eventId)) {
             if (tickets.get(eventId).size() < 5) {

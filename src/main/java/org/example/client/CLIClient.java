@@ -1,5 +1,6 @@
-package org.example;
+package org.example.client;
 
+import org.example.TicketShop;
 import org.example.customer.Customer;
 import org.example.customer.CustomerServiceInterface;
 import org.example.event.Event;
@@ -11,13 +12,13 @@ import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
-public class Client {
+public class CLIClient {
     private final Scanner scanner;
     private final EventServiceInterface eventService;
     private final CustomerServiceInterface customerService;
     private final TicketServiceInterface ticketService;
 
-    public Client(TicketShop ticketShop) {
+    public CLIClient(TicketShop ticketShop) {
         scanner = new Scanner(System.in);
         eventService = ticketShop.getEventServiceInterface();
         customerService = ticketShop.getCustomerServiceInterface();
