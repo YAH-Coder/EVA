@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
-public class TicketService implements TicketServiceInterface, TicketServiceInterface {
+public class TicketService implements TicketServiceInterface {
     private final HashMap<Long, Ticket> tickets;
     private final IDService idService;
     private final CustomerService customerService = CustomerService.getInstance();
@@ -59,7 +59,7 @@ public class TicketService implements TicketServiceInterface, TicketServiceInter
     }
 
     @Override
-    public Ticket[] getAllTickets() {
+    public Ticket[] getAll() {
         return tickets.values().toArray(new Ticket[tickets.size()]);
     }
 
@@ -69,18 +69,6 @@ public class TicketService implements TicketServiceInterface, TicketServiceInter
             idService.delete(id);
         }
         tickets.clear();
-    }
-
-    @Override
-    public void printAll() {
-        if (tickets.isEmpty()) {
-            System.out.println("No tickets available.");
-            return;
-        }
-        for (Ticket ticket : tickets.values()) {
-            System.out.println(ticket);
-            System.out.println("===============");
-        }
     }
 
     public Boolean checkTicket(Long ticketId, Long eventId, Long customerId) {

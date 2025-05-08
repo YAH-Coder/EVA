@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
-public class CustomerService implements CustomerServiceInterface, CustomerServiceInterface {
+public class CustomerService implements CustomerServiceInterface {
     private final HashMap<Long, Customer> customers;
     private final IDService idService;
     private static CustomerService INSTANCE;
@@ -59,7 +59,7 @@ public class CustomerService implements CustomerServiceInterface, CustomerServic
     }
 
     @Override
-    public Customer[] getAllCustomers() {
+    public Customer[] getAll() {
         return customers.values().toArray(new Customer[customers.size()]);
     }
 
@@ -69,17 +69,5 @@ public class CustomerService implements CustomerServiceInterface, CustomerServic
             idService.delete(id);
         }
         customers.clear();
-    }
-
-    @Override
-    public void printAll() {
-        if (customers.isEmpty()) {
-            System.out.println("No customers available.");
-            return;
-        }
-        for (Customer customer : customers.values()) {
-            System.out.println(customer);
-            System.out.println("===============");
-        }
     }
 }

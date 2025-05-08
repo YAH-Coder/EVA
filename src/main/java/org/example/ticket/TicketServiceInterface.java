@@ -9,7 +9,7 @@ public interface TicketServiceInterface {
 
     void delete(long id);
 
-    Ticket[] getAllTickets();
+    Ticket[] getAll();
 
     void deleteAll();
 }

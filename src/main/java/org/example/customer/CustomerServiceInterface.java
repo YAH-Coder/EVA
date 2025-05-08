@@ -11,7 +11,7 @@ public interface CustomerServiceInterface {
 
     void delete(long id);
 
-    Customer[] getAllCustomers();
+    Customer[] getAll();
 
     void deleteAll();
 }

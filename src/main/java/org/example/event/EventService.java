@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
-public class EventService implements EventServiceInterface, EventServiceInterface {
+public class EventService implements EventServiceInterface {
     private final HashMap<Long, Event> events;
     private final IDService idService;
     private static EventService INSTANCE;
@@ -59,7 +59,7 @@ public class EventService implements EventServiceInterface, EventServiceInterfac
     }
 
     @Override
-    public Event[] getAllEvents() {
+    public Event[] getAll() {
         return events.values().toArray(new Event[events.size()]);
     }
 
@@ -69,17 +69,5 @@ public class EventService implements EventServiceInterface, EventServiceInterfac
             idService.delete(id);
         }
         events.clear();
-    }
-
-    @Override
-    public void printAll() {
-        if (events.isEmpty()) {
-            System.out.println("No events available.");
-            return;
-        }
-        for (Event event : events.values()) {
-            System.out.println(event);
-            System.out.println("===============");
-        }
     }
 }

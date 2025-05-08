@@ -1,12 +1,10 @@
 package org.example;
 
 import org.example.customer.Customer;
-import org.example.customer.CustomerService;
 import org.example.customer.CustomerServiceInterface;
 import org.example.event.Event;
-import org.example.event.EventService;
 import org.example.event.EventServiceInterface;
-import org.example.ticket.TicketService;
+import org.example.ticket.Ticket;
 import org.example.ticket.TicketServiceInterface;
 
 import java.time.LocalDateTime;
@@ -237,11 +235,17 @@ public class Client {
     }
 
     private void showEvents() {
-        eventService.printAll();
+        Event[] events = eventService.getAll();
+        for (Event event : events) {
+            System.out.println(event);
+        }
     }
 
     private void showCustomers() {
-        customerService.printAll();
+        Customer[] customers = customerService.getAll();
+        for (Customer customer : customers) {
+            System.out.println(customer);
+        }
     }
 
     private void newTicket() {
@@ -282,7 +286,10 @@ public class Client {
     }
 
     private void getAllTickets() {
-        ticketService.printAll();
+        Ticket[] tickets = ticketService.getAll();
+        for (Ticket ticket : tickets) {
+            System.out.println(ticket);
+        }
     }
 
     public void start() {
@@ -334,7 +341,8 @@ public class Client {
                     getTicket();
                     break;
                 case "gta":
-                    getAllTickets();;
+                    getAllTickets();
+                    ;
                     break;
                 case "dt":
                     deleteTicket();

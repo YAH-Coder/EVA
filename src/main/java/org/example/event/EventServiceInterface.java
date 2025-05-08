@@ -11,7 +11,7 @@ public interface EventServiceInterface {
 
     void delete(long id);
 
-    Event[] getAllEvents();
+    Event[] getAll();
 
     void deleteAll();
 }
