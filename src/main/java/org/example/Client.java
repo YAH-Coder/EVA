@@ -251,8 +251,8 @@ public class Client {
         try {
             System.out.println("Enter customer Id: ");
             long customerId = Long.parseLong(scanner.nextLine());
-            long eventId = Long.parseLong(scanner.nextLine());
             System.out.println("Enter customer Id: ");
+            long eventId = Long.parseLong(scanner.nextLine());
             ticketService.add(LocalDateTime.now(), customerId, eventId);
             System.out.println("Created Ticket for event wit id=" + eventId);
         } catch (Exception e) {
@@ -280,7 +280,7 @@ public class Client {
             long ticketId = Long.parseLong(scanner.nextLine());
             System.out.println(ticketService.get(ticketId));
         } catch (Exception e) {
-            System.out.println("Failed to delete Ticket");
+            System.out.println("Failed to find Ticket");
         }
     }
 
@@ -339,14 +339,13 @@ public class Client {
                 case "gt":
                     getTicket();
                     break;
-                case "gta":
+                case "gat":
                     getAllTickets();
-                    ;
                     break;
                 case "dt":
                     deleteTicket();
                     break;
-                case "dta":
+                case "dat":
                     deleteAllTickets();
                     break;
                 case "h":
