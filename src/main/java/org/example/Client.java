@@ -17,9 +17,8 @@ public class Client {
     private final CustomerServiceInterface customerService;
     private final TicketServiceInterface ticketService;
 
-    public Client() {
+    public Client(TicketShop ticketShop) {
         scanner = new Scanner(System.in);
-        TicketShop ticketShop = new TicketShop();
         eventService = ticketShop.getEventServiceInterface();
         customerService = ticketShop.getCustomerServiceInterface();
         ticketService = ticketShop.getTicketServiceInterface();
