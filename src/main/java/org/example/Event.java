@@ -78,6 +78,17 @@ public class Event {
         this.nmbTickets = nmbTickets;
     }
 
+    public void decreaseNmbTickets() {
+        if (nmbTickets == 0) {
+            throw new RuntimeException("Can't decrease amount of tickets below 0");
+        }
+        this.nmbTickets -= 1;
+    }
+
+    public void increaseNmbTickets() {
+        this.nmbTickets += 1;
+    }
+
     @Override
     public String toString() {
         return String.format(

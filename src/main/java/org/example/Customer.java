@@ -1,6 +1,8 @@
 package org.example;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Objects;
 
 public class Customer {
@@ -8,6 +10,7 @@ public class Customer {
     private String username;
     private String email;
     private LocalDateTime birthday;
+    private HashMap<Long, HashSet<Long>> tickets;
 
     public Customer(long id, String username, String email, LocalDateTime birthday) {
         this.id = id;
@@ -28,10 +31,29 @@ public class Customer {
             throw new IllegalArgumentException("Customer must be at least 18 years old");
         }
         this.birthday = birthday;
+        this.tickets = new HashMap<Long, HashSet<Long>>();
     }
 
     public Customer(Customer other) {
         this(other.id, other.username, other.email, other.birthday);
+    }
+
+    public void addTicket(long eventId, long ticketId) {
+        if (tickets.containsKey(eventId)) {
+            if (tickets.get(eventId).size() < 5) {
+                tickets.get(eventId).add(ticketId);
+            } else {
+                throw new RuntimeException("Can't purchase more than 5 tickets for a single event");
+            }
+        }
+    }
+
+    public void remooveTicket(long eventId, long ticketId) {
+        if (tickets.containsKey(eventId)) {
+            tickets.get(eventId).remove(ticketId);
+        } else {
+            throw new RuntimeException("Event with id=" + eventId + " not found");
+        }
     }
 
     public String getUsername() {
