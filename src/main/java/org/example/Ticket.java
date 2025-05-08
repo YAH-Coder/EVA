@@ -1,5 +1,7 @@
 package org.example;
 
+import lombok.ToString;
+
 import java.time.LocalDateTime;
 
 public class Ticket {
@@ -47,8 +49,18 @@ public class Ticket {
         return customerId;
     }
 
+
     public long getEventId() {
         return eventId;
     }
 
+    @Override
+    public String toString() {
+        return "Ticket{" +
+                "id=" + id +
+                ", purchaseDate=" + purchaseDate +
+                ", customerId=" + customerId +
+                ", eventId=" + eventId +
+                '}';
+    }
 }

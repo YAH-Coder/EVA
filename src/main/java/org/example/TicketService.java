@@ -9,10 +9,18 @@ public class TicketService {
     private final IDService idService;
     private final CustomerService customerService = CustomerService.getInstance();
     private final EventService eventService = EventService.getInstance();
+    private static TicketService INSTANCE;
 
     public TicketService() {
         this.tickets = new HashMap<>();
         this.idService = new IDService();
+    }
+
+    public static TicketService getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new TicketService();
+        }
+        return INSTANCE;
     }
 
     public Ticket add(LocalDateTime purchaseDate, Long customerId, Long eventId) {

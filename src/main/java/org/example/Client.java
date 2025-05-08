@@ -8,16 +8,19 @@ public class Client {
     private final Scanner scanner;
     private final EventService eventService;
     private final CustomerService customerService;
+    private final TicketService ticketService;
 
     public Client() {
         scanner = new Scanner(System.in);
         eventService = EventService.getInstance();
         customerService = CustomerService.getInstance();
+        ticketService = TicketService.getInstance();
     }
 
     private void help() {
         helpEvent();
         helpCustomer();
+        helpTicket();
         helpGeneral();
     }
 
@@ -39,6 +42,14 @@ public class Client {
         System.out.println("(dac) - delete all Customers");
     }
 
+    private void helpTicket() {
+        System.out.println("(nt) - create new Ticket");
+        System.out.println("(gt) - get Ticket by ID");
+        System.out.println("(dt) - delete Ticket by ID");
+        System.out.println("(gta) - show all Tickets");
+        System.out.println("(dta) - delete all Tickets");
+    }
+    
     private void helpGeneral() {
         System.out.println("(h) - show help");
         System.out.println("(he) - show event help");
@@ -223,6 +234,47 @@ public class Client {
         customerService.printAll();
     }
 
+    private void newTicket() {
+        try {
+            System.out.println("Enter customer Id: ");
+            long customerId = Long.parseLong(scanner.nextLine());
+            long eventId = Long.parseLong(scanner.nextLine());
+            System.out.println("Enter customer Id: ");
+            ticketService.add(LocalDateTime.now(), customerId, eventId);
+            System.out.println("Created Ticket for event wit id=" + eventId);
+        } catch (Exception e) {
+            System.out.println("Failed to create Ticket");
+        }
+    }
+
+    private void deleteTicket() {
+        try {
+            System.out.println("Enter ticket Id: ");
+            long ticketId = Long.parseLong(scanner.nextLine());
+            ticketService.delete(ticketId);
+        } catch (Exception e) {
+            System.out.println("Failed to delete Ticket");
+        }
+    }
+
+    private void deleteAllTickets() {
+        ticketService.deleteAll();
+    }
+
+    private void getTicket() {
+        try {
+            System.out.println("Enter ticket Id: ");
+            long ticketId = Long.parseLong(scanner.nextLine());
+            System.out.println(ticketService.get(ticketId));
+        } catch (Exception e) {
+            System.out.println("Failed to delete Ticket");
+        }
+    }
+
+    private void getAllTickets() {
+        ticketService.printAll();
+    }
+
     public void start() {
         help();
         while (true) {
@@ -264,6 +316,21 @@ public class Client {
                     break;
                 case "dac":
                     deleteAllCustomers();
+                    break;
+                case "nt":
+                    newTicket();
+                    break;
+                case "gt":
+                    getTicket();
+                    break;
+                case "gta":
+                    getAllTickets();;
+                    break;
+                case "dt":
+                    deleteTicket();
+                    break;
+                case "dta":
+                    deleteAllTickets();
                     break;
                 case "h":
                 case "help":
