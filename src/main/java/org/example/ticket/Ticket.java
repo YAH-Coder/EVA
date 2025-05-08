@@ -1,6 +1,9 @@
-package org.example;
+package org.example.ticket;
 
-import lombok.ToString;
+import org.example.customer.Customer;
+import org.example.customer.CustomerService;
+import org.example.event.Event;
+import org.example.event.EventService;
 
 import java.time.LocalDateTime;
 

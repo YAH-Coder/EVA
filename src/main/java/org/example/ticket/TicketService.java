@@ -1,10 +1,14 @@
-package org.example;
+package org.example.ticket;
+
+import org.example.utils.IDService;
+import org.example.customer.CustomerService;
+import org.example.event.EventService;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
-public class TicketService {
+public class TicketService implements TicketServiceInterface, TicketServiceInterface {
     private final HashMap<Long, Ticket> tickets;
     private final IDService idService;
     private final CustomerService customerService = CustomerService.getInstance();
@@ -23,6 +27,7 @@ public class TicketService {
         return INSTANCE;
     }
 
+    @Override
     public Ticket add(LocalDateTime purchaseDate, Long customerId, Long eventId) {
         long id = idService.getNew();
         Ticket ticket = new Ticket(id, purchaseDate, customerId, eventId);
@@ -32,6 +37,7 @@ public class TicketService {
         return ticket;
     }
 
+    @Override
     public Ticket get(long id) {
         Ticket ticket = tickets.get(id);
         if (ticket == null) {
@@ -40,6 +46,7 @@ public class TicketService {
         return ticket;
     }
 
+    @Override
     public void delete(long id) {
         if (!tickets.containsKey(id)) {
             throw new NoSuchElementException("No customer found with ID " + id);
@@ -51,10 +58,12 @@ public class TicketService {
         customerService.get(ticket.getCustomerId()).remooveTicket(ticket.getEventId(), id);
     }
 
+    @Override
     public Ticket[] getAllTickets() {
         return tickets.values().toArray(new Ticket[tickets.size()]);
     }
 
+    @Override
     public void deleteAll() {
         for (Long id : tickets.keySet()) {
             idService.delete(id);
@@ -62,6 +71,7 @@ public class TicketService {
         tickets.clear();
     }
 
+    @Override
     public void printAll() {
         if (tickets.isEmpty()) {
             System.out.println("No tickets available.");

@@ -1,20 +1,30 @@
 package org.example;
 
+import org.example.customer.Customer;
+import org.example.customer.CustomerService;
+import org.example.customer.CustomerServiceInterface;
+import org.example.event.Event;
+import org.example.event.EventService;
+import org.example.event.EventServiceInterface;
+import org.example.ticket.TicketService;
+import org.example.ticket.TicketServiceInterface;
+
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class Client {
     private final Scanner scanner;
-    private final EventService eventService;
-    private final CustomerService customerService;
-    private final TicketService ticketService;
+    private final EventServiceInterface eventService;
+    private final CustomerServiceInterface customerService;
+    private final TicketServiceInterface ticketService;
 
     public Client() {
         scanner = new Scanner(System.in);
-        eventService = EventService.getInstance();
-        customerService = CustomerService.getInstance();
-        ticketService = TicketService.getInstance();
+        TicketShop ticketShop = new TicketShop();
+        eventService = ticketShop.getEventServiceInterface();
+        customerService = ticketShop.getCustomerServiceInterface();
+        ticketService = ticketShop.getTicketServiceInterface();
     }
 
     private void help() {
@@ -49,7 +59,7 @@ public class Client {
         System.out.println("(gta) - show all Tickets");
         System.out.println("(dta) - delete all Tickets");
     }
-    
+
     private void helpGeneral() {
         System.out.println("(h) - show help");
         System.out.println("(he) - show event help");

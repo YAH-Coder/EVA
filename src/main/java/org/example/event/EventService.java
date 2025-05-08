@@ -1,10 +1,12 @@
-package org.example;
+package org.example.event;
+
+import org.example.utils.IDService;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
-public class EventService {
+public class EventService implements EventServiceInterface, EventServiceInterface {
     private final HashMap<Long, Event> events;
     private final IDService idService;
     private static EventService INSTANCE;
@@ -21,6 +23,7 @@ public class EventService {
         return INSTANCE;
     }
 
+    @Override
     public Event add(String name, String location, LocalDateTime date, int nmbTickets) {
         long id = idService.getNew();
         Event event = new Event(id, name, location, date, nmbTickets);
@@ -28,6 +31,7 @@ public class EventService {
         return event;
     }
 
+    @Override
     public Event get(long id) {
         Event event = events.get(id);
         if (event == null) {
@@ -36,6 +40,7 @@ public class EventService {
         return event;
     }
 
+    @Override
     public void update(long id, String name, String location, LocalDateTime date, int nmbTickets) {
         Event event = get(id);
         event.setName(name);
@@ -44,6 +49,7 @@ public class EventService {
         event.setNmbTickets(nmbTickets);
     }
 
+    @Override
     public void delete(long id) {
         if (!events.containsKey(id)) {
             throw new NoSuchElementException("No event found with ID " + id);
@@ -52,10 +58,12 @@ public class EventService {
         idService.delete(id);
     }
 
+    @Override
     public Event[] getAllEvents() {
         return events.values().toArray(new Event[events.size()]);
     }
 
+    @Override
     public void deleteAll() {
         for (Long id : events.keySet()) {
             idService.delete(id);
@@ -63,6 +71,7 @@ public class EventService {
         events.clear();
     }
 
+    @Override
     public void printAll() {
         if (events.isEmpty()) {
             System.out.println("No events available.");
