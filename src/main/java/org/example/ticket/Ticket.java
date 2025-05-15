@@ -33,11 +33,6 @@ public class Ticket {
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Event ID " + eventId + " not found.");
         }
-        if (eventService.get(eventId).getNmbTickets() > 0) {
-            eventService.get(eventId).setNmbTickets(eventService.get(eventId).getNmbTickets() - 1);
-        } else {
-            throw new RuntimeException("Event does not have enough tickets.");
-        }
     }
 
     public long getId() {

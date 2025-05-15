@@ -12,6 +12,8 @@ public class Main {
         PerformanceClient performanceClient = new PerformanceClient(ticketShop);
         performanceClient.createEvents(100, 1000);
         performanceClient.createCustomers(1000);
-        performanceClient.buyTickets();
+        performanceClient.buyTickets(1);
+        performanceClient.createEvents(100, 2000);
+        performanceClient.buyTickets(2);
     }
 }

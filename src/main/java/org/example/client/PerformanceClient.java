@@ -36,13 +36,18 @@ public class PerformanceClient {
         System.out.println("Creating " + nmbOfCustomers + " Customers took " + (System.currentTimeMillis() - startTime) + "ms");
     }
 
-    public void buyTickets() {
+    public void buyTickets(int amount) {
         long startTime = System.currentTimeMillis();
         for (Customer customer: customerService.getAll()) {
             for (Event event: eventService.getAll()) {
-                ticketService.add(LocalDateTime.now(), customer.getId(), event.getId());
+                if (event.getNmbTickets() == 0) {
+                    continue;
+                }
+                for (int i = 0; i < amount; i++) {
+                    ticketService.add(LocalDateTime.now(), customer.getId(), event.getId());
+                }
             }
         }
-        System.out.println("Buying 1 ticket for every customer for every event took " + (System.currentTimeMillis() - startTime) + "ms");
+        System.out.println("Buying " + amount + " ticket for every customer for every event took " + (System.currentTimeMillis() - startTime) + "ms");
     }
 }
