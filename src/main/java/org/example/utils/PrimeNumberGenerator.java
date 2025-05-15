@@ -1,7 +1,5 @@
 package org.example.utils;
 
-import java.util.stream.IntStream;
-
 public class PrimeNumberGenerator {
     private long current;
 
@@ -25,8 +23,13 @@ public class PrimeNumberGenerator {
 //            }
 //        }
 //        return true;
-        return number > 1
-                && IntStream.rangeClosed(2, (int) Math.sqrt(number))
-                .noneMatch(i -> number % i == 0);
-    }
+            if (number <= 3)           return number > 1;
+            if ((number & 1) == 0)     return false;
+            if (number % 3 == 0)       return false;
+
+            for (long i = 5; i * i <= number; i += 6) {
+                if (number % i == 0 || number % (i + 2) == 0)
+                    return false;
+            }
+            return true; }
 }

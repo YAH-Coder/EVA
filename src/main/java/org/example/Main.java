@@ -6,6 +6,7 @@ import org.example.client.PerformanceClient;
 public class Main {
 
     public static void main(String[] args) {
+        long startTime = System.currentTimeMillis();
         TicketShop ticketShop = new TicketShop();
 //        CLIClient CLIClient = new CLIClient(ticketShop);
 //        CLIClient.start();
@@ -15,5 +16,6 @@ public class Main {
         performanceClient.buyTickets(1);
         performanceClient.createEvents(100, 2000);
         performanceClient.buyTickets(2);
+        System.out.println("Total time " + (System.currentTimeMillis() - startTime) + "ms");
     }
 }
