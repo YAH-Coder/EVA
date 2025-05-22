@@ -1,6 +1,7 @@
 package org.example.event;
 
 import org.example.utils.IDService;
+import org.example.utils.IDServiceParallel;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -8,15 +9,15 @@ import java.util.NoSuchElementException;
 
 public class EventService implements EventServiceInterface {
     private final HashMap<Long, Event> events;
-    private final IDService idService;
+    private final IDServiceParallel idService;
     private static EventService INSTANCE;
 
-    private EventService() {
+    private EventService() throws InterruptedException {
         this.events = new HashMap<>();
-        this.idService = new IDService();
+        this.idService = new IDServiceParallel(10000);
     }
 
-    public static EventService getInstance() {
+    public static EventService getInstance() throws InterruptedException {
         if(INSTANCE == null){
             INSTANCE = new EventService();
         }
@@ -24,7 +25,7 @@ public class EventService implements EventServiceInterface {
     }
 
     @Override
-    public Event add(String name, String location, LocalDateTime date, int nmbTickets) {
+    public Event add(String name, String location, LocalDateTime date, int nmbTickets) throws InterruptedException {
         long id = idService.getNew();
         Event event = new Event(id, name, location, date, nmbTickets);
         events.put(id, event);

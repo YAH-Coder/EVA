@@ -1,6 +1,7 @@
 package org.example.customer;
 
 import org.example.utils.IDService;
+import org.example.utils.IDServiceParallel;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -8,15 +9,15 @@ import java.util.NoSuchElementException;
 
 public class CustomerService implements CustomerServiceInterface {
     private final HashMap<Long, Customer> customers;
-    private final IDService idService;
+    private final IDServiceParallel idService;
     private static CustomerService INSTANCE;
 
-    private CustomerService() {
+    private CustomerService() throws InterruptedException {
         this.customers = new HashMap<>();
-        this.idService = new IDService();
+        this.idService = new IDServiceParallel(1000);
     }
 
-    public static CustomerService getInstance() {
+    public static CustomerService getInstance() throws InterruptedException {
         if (INSTANCE == null) {
             INSTANCE = new CustomerService();
         }
@@ -25,7 +26,7 @@ public class CustomerService implements CustomerServiceInterface {
 
 
     @Override
-    public Customer add(String username, String email, LocalDateTime birthday) {
+    public Customer add(String username, String email, LocalDateTime birthday) throws InterruptedException {
         long id = idService.getNew();
         Customer customer = new Customer(id, username, email, birthday);
         customers.put(id, customer);

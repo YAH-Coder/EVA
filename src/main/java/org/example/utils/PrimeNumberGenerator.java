@@ -23,13 +23,14 @@ public class PrimeNumberGenerator {
 //            }
 //        }
 //        return true;
-            if (number <= 3)           return number > 1;
-            if ((number & 1) == 0)     return false;
-            if (number % 3 == 0)       return false;
+        if (number <= 3) return number > 1;
+        if ((number & 1) == 0) return false;
+        if (number % 3 == 0) return false;
 
-            for (long i = 5; i * i <= number; i += 6) {
-                if (number % i == 0 || number % (i + 2) == 0)
-                    return false;
-            }
-            return true; }
+        for (long i = 5; i * i <= number; i += 6) {
+            if (number % i == 0 || number % (i + 2) == 0)
+                return false;
+        }
+        return true;
+    }
 }

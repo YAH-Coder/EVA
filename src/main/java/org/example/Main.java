@@ -2,12 +2,14 @@ package org.example;
 
 import org.example.client.CLIClient;
 import org.example.client.PerformanceClient;
+import org.example.utils.IDServiceParallel;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         long startTime = System.currentTimeMillis();
-        TicketShop ticketShop = new TicketShop();
+        IDServiceParallel idService = new IDServiceParallel(10000);
+        TicketShop ticketShop = new TicketShop(idService);
 //        CLIClient CLIClient = new CLIClient(ticketShop);
 //        CLIClient.start();
         PerformanceClient performanceClient = new PerformanceClient(ticketShop);

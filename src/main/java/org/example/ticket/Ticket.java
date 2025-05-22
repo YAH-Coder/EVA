@@ -15,7 +15,7 @@ public class Ticket {
     private final EventService eventService = EventService.getInstance();
     private final CustomerService customerService = CustomerService.getInstance();
 
-    public Ticket(long id, LocalDateTime purchaseDate, long customerId, long eventId) {
+    public Ticket(long id, LocalDateTime purchaseDate, long customerId, long eventId) throws InterruptedException {
         this.id = id;
         if (purchaseDate.isAfter(eventService.get(eventId).getDate())) {
             throw new IllegalArgumentException("Purchase date must be before event date.");

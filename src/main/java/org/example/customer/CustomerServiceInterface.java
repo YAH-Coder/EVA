@@ -3,7 +3,7 @@ package org.example.customer;
 import java.time.LocalDateTime;
 
 public interface CustomerServiceInterface {
-    Customer add(String username, String email, LocalDateTime birthday);
+    Customer add(String username, String email, LocalDateTime birthday) throws InterruptedException;
 
     Customer get(long id);
 
