@@ -4,29 +4,38 @@ import org.example.utils.IDService;
 import org.example.utils.IDServiceParallel;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.NoSuchElementException;
 
 public class CustomerService implements CustomerServiceInterface {
-    private final HashMap<Long, Customer> customers;
-    private final IDServiceParallel idService;
-    private static CustomerService INSTANCE;
+    private final ConcurrentHashMap<Long, Customer> customers;
+    private static final IDServiceParallel idService;
+    private static final CustomerService INSTANCE;
 
-    private CustomerService() throws InterruptedException {
-        this.customers = new HashMap<>();
-        this.idService = new IDServiceParallel(1000);
+    static {
+        try {
+            // Initialize idService first as CustomerService constructor might depend on it
+            // if it were to use idService directly during its own construction,
+            // though in this specific case, it's not strictly necessary as idService is used in methods.
+            idService = IDServiceParallel.getInstance();
+            INSTANCE = new CustomerService();
+        } catch (RuntimeException e) { // Catching RuntimeException from IDServiceParallel.getInstance()
+            throw new RuntimeException("Failed to initialize CustomerService", e);
+        }
     }
 
-    public static CustomerService getInstance() throws InterruptedException {
-        if (INSTANCE == null) {
-            INSTANCE = new CustomerService();
-        }
+    private CustomerService() { // No longer throws InterruptedException
+        this.customers = new ConcurrentHashMap<>();
+        // this.idService = new IDServiceParallel(1000); // Removed
+    }
+
+    public static CustomerService getInstance() {
         return INSTANCE;
     }
 
 
     @Override
-    public Customer add(String username, String email, LocalDateTime birthday) throws InterruptedException {
+    public synchronized Customer add(String username, String email, LocalDateTime birthday) throws InterruptedException {
         long id = idService.getNew();
         Customer customer = new Customer(id, username, email, birthday);
         customers.put(id, customer);
@@ -43,7 +52,7 @@ public class CustomerService implements CustomerServiceInterface {
     }
 
     @Override
-    public void update(long id, String name, String email, LocalDateTime birthday) {
+    public synchronized void update(long id, String name, String email, LocalDateTime birthday) {
         Customer customer = get(id);
         customer.setUsername(name);
         customer.setEmail(email);
@@ -51,7 +60,7 @@ public class CustomerService implements CustomerServiceInterface {
     }
 
     @Override
-    public void delete(long id) {
+    public synchronized void delete(long id) {
         if (!customers.containsKey(id)) {
             throw new NoSuchElementException("No customer found with ID " + id);
         }
@@ -65,7 +74,7 @@ public class CustomerService implements CustomerServiceInterface {
     }
 
     @Override
-    public void deleteAll() {
+    public synchronized void deleteAll() {
         for (Long id : customers.keySet()) {
             idService.delete(id);
         }

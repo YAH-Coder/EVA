@@ -13,7 +13,7 @@ public class TicketShop {
     private final EventServiceInterface eventServiceInterface;
     private final TicketServiceInterface ticketServiceInterface;
 
-    public TicketShop(IDServiceParallel idService) throws InterruptedException {
+    public TicketShop() { // Removed IDServiceParallel parameter and InterruptedException
         this.customerServiceInterface = CustomerService.getInstance();
         this.eventServiceInterface = EventService.getInstance();
         this.ticketServiceInterface = TicketService.getInstance();

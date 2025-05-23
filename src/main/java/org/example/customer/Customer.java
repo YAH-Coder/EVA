@@ -44,7 +44,7 @@ public class Customer {
         }
     }
 
-    public void remooveTicket(long eventId, long ticketId) {
+    public void removeTicket(long eventId, long ticketId) {
         if (tickets.containsKey(eventId)) {
             tickets.get(eventId).remove(ticketId);
         } else {

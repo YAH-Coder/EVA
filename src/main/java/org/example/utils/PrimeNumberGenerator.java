@@ -33,4 +33,8 @@ public class PrimeNumberGenerator {
         }
         return true;
     }
+
+    public long getCurrent() {
+        return current;
+    }
 }

@@ -4,28 +4,34 @@ import org.example.utils.IDService;
 import org.example.utils.IDServiceParallel;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.NoSuchElementException;
 
 public class EventService implements EventServiceInterface {
-    private final HashMap<Long, Event> events;
-    private final IDServiceParallel idService;
-    private static EventService INSTANCE;
+    private final ConcurrentHashMap<Long, Event> events;
+    private static final IDServiceParallel idService;
+    private static final EventService INSTANCE;
 
-    private EventService() throws InterruptedException {
-        this.events = new HashMap<>();
-        this.idService = new IDServiceParallel(10000);
+    static {
+        try {
+            idService = IDServiceParallel.getInstance();
+            INSTANCE = new EventService();
+        } catch (RuntimeException e) { // Catching RuntimeException from IDServiceParallel.getInstance()
+            throw new RuntimeException("Failed to initialize EventService", e);
+        }
     }
 
-    public static EventService getInstance() throws InterruptedException {
-        if(INSTANCE == null){
-            INSTANCE = new EventService();
-        }
+    private EventService() { // No longer throws InterruptedException
+        this.events = new ConcurrentHashMap<>();
+        // this.idService = new IDServiceParallel(10000); // Removed
+    }
+
+    public static EventService getInstance() {
         return INSTANCE;
     }
 
     @Override
-    public Event add(String name, String location, LocalDateTime date, int nmbTickets) throws InterruptedException {
+    public synchronized Event add(String name, String location, LocalDateTime date, int nmbTickets) throws InterruptedException {
         long id = idService.getNew();
         Event event = new Event(id, name, location, date, nmbTickets);
         events.put(id, event);
@@ -42,7 +48,7 @@ public class EventService implements EventServiceInterface {
     }
 
     @Override
-    public void update(long id, String name, String location, LocalDateTime date, int nmbTickets) {
+    public synchronized void update(long id, String name, String location, LocalDateTime date, int nmbTickets) {
         Event event = get(id);
         event.setName(name);
         event.setLocation(location);
@@ -51,7 +57,7 @@ public class EventService implements EventServiceInterface {
     }
 
     @Override
-    public void delete(long id) {
+    public synchronized void delete(long id) {
         if (!events.containsKey(id)) {
             throw new NoSuchElementException("No event found with ID " + id);
         }
@@ -65,7 +71,7 @@ public class EventService implements EventServiceInterface {
     }
 
     @Override
-    public void deleteAll() {
+    public synchronized void deleteAll() {
         for (Long id : events.keySet()) {
             idService.delete(id);
         }
