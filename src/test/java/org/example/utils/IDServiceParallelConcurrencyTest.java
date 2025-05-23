@@ -15,6 +15,16 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+// Note on Test Isolation:
+// IDServiceParallel is a singleton. Its state (available IDs, next prime start point)
+// persists across test method executions within the same JVM run.
+// This can affect tests, especially high-volume ones, if they are sensitive to the initial
+// state of the ID pool. For true isolation, IDServiceParallel would need a reset mechanism
+// or tests would need to re-initialize the singleton (e.g., via reflection if in the same package),
+// which is beyond the scope of typical unit testing for singletons.
+// These tests are designed to stress concurrency aspects assuming the singleton behaves correctly
+// even if its initial state is affected by prior tests. Consider running tests in isolation
+// or implementing reset capabilities for more deterministic behavior in complex scenarios.
 public class IDServiceParallelConcurrencyTest {
 
     @Test
@@ -161,5 +171,66 @@ public class IDServiceParallelConcurrencyTest {
         // A more advanced test might involve checking the internal state of IDServiceParallel
         // or ensuring that a certain percentage of delete operations were successful.
         // For now, the main assertion is that no unexpected exceptions were thrown.
+    }
+
+    @Test
+    @Timeout(value = 180, unit = TimeUnit.SECONDS) // Generous timeout for high volume
+    void testHighVolumeIdGenerationAndReplenishment() throws InterruptedException {
+        IDServiceParallel idService = IDServiceParallel.getInstance();
+        int numClientThreads = 50; // High number of threads
+        int idsToRequestPerThread = 5000; // High number of IDs per thread
+        // REPLENISH_AMOUNT in IDServiceParallel is 100. This will trigger many replenishments.
+        long expectedTotalUniqueIds = (long) numClientThreads * idsToRequestPerThread;
+
+        ExecutorService clientExecutor = Executors.newFixedThreadPool(numClientThreads);
+        CountDownLatch latch = new CountDownLatch(numClientThreads);
+        Set<Long> allGeneratedIds = ConcurrentHashMap.newKeySet();
+        AtomicBoolean testFailed = new AtomicBoolean(false);
+
+        System.out.println("Starting high-volume test: " + numClientThreads + " threads, "
+                + idsToRequestPerThread + " IDs each. Total: " + expectedTotalUniqueIds);
+        long startTime = System.currentTimeMillis();
+
+        for (int i = 0; i < numClientThreads; i++) {
+            clientExecutor.submit(() -> {
+                try {
+                    for (int j = 0; j < idsToRequestPerThread; j++) {
+                        long id = idService.getNew();
+                        allGeneratedIds.add(id);
+                        if (Thread.currentThread().isInterrupted()) {
+                            System.err.println("Client thread interrupted, stopping ID generation for this thread.");
+                            testFailed.set(true);
+                            break; 
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Exception in client thread: " + e.getMessage());
+                    e.printStackTrace();
+                    testFailed.set(true);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        boolean completedInTime = latch.await(170, TimeUnit.SECONDS); // Slightly less than overall timeout
+
+        long endTime = System.currentTimeMillis();
+        System.out.println("High-volume test main phase duration: " + (endTime - startTime) + " ms");
+        System.out.println("Current unique IDs generated: " + allGeneratedIds.size());
+
+
+        clientExecutor.shutdown();
+        boolean terminatedGracefully = clientExecutor.awaitTermination(10, TimeUnit.SECONDS);
+        if (!terminatedGracefully) {
+            System.err.println("Client executor did not terminate gracefully. Forcing shutdown.");
+            clientExecutor.shutdownNow();
+        }
+        
+        assertFalse(testFailed.get(), "One or more client threads failed with an exception.");
+        assertTrue(completedInTime, "Not all client threads completed in the allotted time.");
+        assertEquals(expectedTotalUniqueIds, allGeneratedIds.size(),
+                "Ensure all requested IDs were generated and are unique. Current count: " + allGeneratedIds.size());
+        System.out.println("High-volume test successfully generated " + allGeneratedIds.size() + " unique IDs.");
     }
 }

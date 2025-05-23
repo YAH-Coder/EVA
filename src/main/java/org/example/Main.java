@@ -8,8 +8,8 @@ public class Main {
 
     public static void main(String[] args) throws InterruptedException {
         long startTime = System.currentTimeMillis();
-        IDServiceParallel idService = new IDServiceParallel(10000);
-        TicketShop ticketShop = new TicketShop(idService);
+        // IDServiceParallel idService = new IDServiceParallel(10000); // Removed: IDServiceParallel is a singleton
+        TicketShop ticketShop = new TicketShop(); // Use parameterless constructor
 //        CLIClient CLIClient = new CLIClient(ticketShop);
 //        CLIClient.start();
         PerformanceClient performanceClient = new PerformanceClient(ticketShop);
