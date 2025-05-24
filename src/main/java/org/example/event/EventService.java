@@ -1,7 +1,7 @@
 package org.example.event;
 
-import org.example.utils.IDService;
-import org.example.utils.IDServiceParallel;
+// import org.example.utils.IDService; // IDService might be an interface
+import org.example.utils.SharedIDService; // Added import
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -9,15 +9,15 @@ import java.util.NoSuchElementException;
 
 public class EventService implements EventServiceInterface {
     private final HashMap<Long, Event> events;
-    private final IDServiceParallel idService;
+    // private final IDServiceParallel idService; // Removed
     private static EventService INSTANCE;
 
-    private EventService() throws InterruptedException {
+    private EventService() { // Removed throws InterruptedException
         this.events = new HashMap<>();
-        this.idService = new IDServiceParallel(10000);
+        // this.idService = new IDServiceParallel(10000); // Removed
     }
 
-    public static EventService getInstance() throws InterruptedException {
+    public static EventService getInstance() throws InterruptedException { // Kept throws InterruptedException as per clarification
         if(INSTANCE == null){
             INSTANCE = new EventService();
         }
@@ -26,7 +26,7 @@ public class EventService implements EventServiceInterface {
 
     @Override
     public Event add(String name, String location, LocalDateTime date, int nmbTickets) throws InterruptedException {
-        long id = idService.getNew();
+        long id = SharedIDService.getInstance().getNew(); // Changed to SharedIDService
         Event event = new Event(id, name, location, date, nmbTickets);
         events.put(id, event);
         return event;
@@ -56,7 +56,7 @@ public class EventService implements EventServiceInterface {
             throw new NoSuchElementException("No event found with ID " + id);
         }
         events.remove(id);
-        idService.delete(id);
+        SharedIDService.getInstance().delete(id); // Changed to SharedIDService
     }
 
     @Override
@@ -67,7 +67,7 @@ public class EventService implements EventServiceInterface {
     @Override
     public void deleteAll() {
         for (Long id : events.keySet()) {
-            idService.delete(id);
+            SharedIDService.getInstance().delete(id); // Changed to SharedIDService
         }
         events.clear();
     }
