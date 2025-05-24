@@ -8,8 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory; // Added import
-import java.util.concurrent.TimeUnit; // Added for awaitTermination
+import java.util.concurrent.CountDownLatch; // Added import
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.NoSuchElementException; // Added for delete
@@ -18,21 +19,28 @@ public class SharedIDService {
     private static final Logger LOGGER = Logger.getLogger(SharedIDService.class.getName());
 
     private static final long LOWER_BOUND = 1_000_000_000L;
-    private static final long INITIAL_PRE_GENERATE_COUNT = 750_000L; // Increased to 750,000
-    private static final int REPLENISH_THRESHOLD = 50;
-    private static final int REPLENISH_AMOUNT = 100;
+    private static final long INITIAL_PRE_GENERATE_COUNT = 500_000L; // Changed to 500,000L
+    private static final long REPLENISH_THRESHOLD = 100_000L; // Adjusted to 20% of REPLENISH_AMOUNT (500_000)
+    private static final long REPLENISH_AMOUNT = 500_000L; // Changed to 500,000L and type to long
 
     private final Set<Long> available = ConcurrentHashMap.newKeySet();
     private final Set<Long> active = ConcurrentHashMap.newKeySet();
 
     private final ExecutorService primeGeneratorExecutor; // Orchestrator
     private final ExecutorService primeSearcherPool;    // Worker pool for parallel search
-    private final int numPrimeSearcherThreads; // Added field
+    private final int numPrimeSearcherThreads; 
 
     private volatile long nextLowerBoundForGeneration = LOWER_BOUND;
-    private Future<?> lastGenerationTaskFuture; // To track the ongoing generation task
+    private Future<?> lastGenerationTaskFuture; 
+
+    // Fields for awaitable initial generation
+    private final CountDownLatch initialGenerationLatch;
+    private volatile boolean initialGenerationPerformed = false;
+    private final Object initialGenLock = new Object();
 
     private SharedIDService() {
+        this.initialGenerationLatch = new CountDownLatch(1); // Initialize latch
+
         ThreadFactory primeGeneratorThreadFactory = new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
@@ -55,7 +63,8 @@ public class SharedIDService {
             }
         };
         int availableProcessors = Runtime.getRuntime().availableProcessors();
-        int localNumSearcherThreads = Math.max(1, (availableProcessors * 7) / 8);
+        // Changed calculation to use all available processors, with a minimum of 1.
+        int localNumSearcherThreads = Math.max(1, availableProcessors);
         this.numPrimeSearcherThreads = localNumSearcherThreads; // Assign to field
         this.primeSearcherPool = Executors.newFixedThreadPool(this.numPrimeSearcherThreads, primeSearcherThreadFactory); // Use field
 
@@ -102,11 +111,11 @@ public class SharedIDService {
         // Storing the future is still useful if we want to inspect it, but it's not used to prevent scheduling.
         this.lastGenerationTaskFuture = primeGeneratorExecutor.submit(() -> {
             long currentGlobalBatchStartBound = nextLowerBoundForGeneration;
-            long countToGenerateInThisBatch = count;
+            long countToGenerateInThisBatch = count; // count is the parameter to schedulePrimeGeneration
 
             LOGGER.info("Orchestrating prime generation batch. Target count: " + countToGenerateInThisBatch + ", Starting search from lower bound: " + currentGlobalBatchStartBound);
 
-            int numSubTasks = this.numPrimeSearcherThreads; // Use field here
+            int numSubTasks = this.numPrimeSearcherThreads; 
             long primesToFindPerSubTask = (countToGenerateInThisBatch + numSubTasks - 1) / numSubTasks;
 
             if (primesToFindPerSubTask <= 0) {
@@ -159,6 +168,15 @@ public class SharedIDService {
             } else {
                 LOGGER.warning("Prime generation batch yielded no new primes. Search started from: " + currentGlobalBatchStartBound);
             }
+
+            // Latch release logic for initial generation
+            synchronized (initialGenLock) {
+                if (!initialGenerationPerformed && countToGenerateInThisBatch == INITIAL_PRE_GENERATE_COUNT) {
+                    initialGenerationLatch.countDown();
+                    initialGenerationPerformed = true;
+                    LOGGER.info("Initial prime generation (for " + INITIAL_PRE_GENERATE_COUNT + " primes) complete. Latch released.");
+                }
+            }
             
             if (maxPrimeFoundInThisBatch >= currentGlobalBatchStartBound) {
                 nextLowerBoundForGeneration = maxPrimeFoundInThisBatch + 1;
@@ -175,6 +193,14 @@ public class SharedIDService {
             }
             LOGGER.info("Next global lower bound for prime generation updated to: " + nextLowerBoundForGeneration);
         });
+    }
+
+    public void awaitInitialGeneration() throws InterruptedException {
+        if (!initialGenerationPerformed) { // Quick check to avoid waiting if already done
+            LOGGER.info("Waiting for initial prime generation to complete...");
+        }
+        initialGenerationLatch.await();
+        LOGGER.info("Initial prime generation confirmed complete (or was already done). Proceeding.");
     }
 
     public synchronized long getNew() throws InterruptedException {
@@ -217,5 +243,10 @@ public class SharedIDService {
     // Method to get current nextLowerBoundForGeneration, useful for testing
     public long getNextLowerBoundForGeneration() {
         return nextLowerBoundForGeneration;
+    }
+
+    // Method to check if initial generation is done (useful for testing)
+    public boolean isInitialGenerationPerformed() {
+        return initialGenerationPerformed;
     }
 }

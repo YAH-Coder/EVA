@@ -32,18 +32,15 @@ public class SharedIDServiceTest {
         // or at least that we are aware of its output.
         Logger.getLogger(SharedIDService.class.getName()).setLevel(Level.WARNING);
         service = SharedIDService.getInstance();
-        // Give some time for initial primes to generate, especially for the first test run.
-        // This helps make tests more stable.
         try {
-            int attempts = 0;
-            // Wait for at least a few primes to be available.
-            while (service.getAvailableCount() < 10 && attempts < 100) { // Wait for 10, or up to 5s
-                Thread.sleep(50);
-                attempts++;
-            }
+            System.out.println("SharedIDServiceTest @BeforeAll: Waiting for initial prime generation...");
+            long startTime = System.currentTimeMillis();
+            service.awaitInitialGeneration(); // New line to ensure full initial setup
+            long endTime = System.currentTimeMillis();
+            System.out.println("SharedIDServiceTest @BeforeAll: Initial prime generation complete. Took " + (endTime - startTime) + "ms.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            fail("Setup interrupted during initial prime generation wait.");
+            fail("Test setup interrupted while waiting for initial prime generation: " + e.getMessage());
         }
     }
 
@@ -56,62 +53,35 @@ public class SharedIDServiceTest {
 
     @Test
     void testInitialPrimeGeneration() throws InterruptedException {
-        // Wait up to a few seconds for initial primes if not already done by BeforeAll
-        int attempts = 0;
-        while (service.getAvailableCount() == 0 && attempts < 60) { // Max ~3 seconds
-            Thread.sleep(50);
-            attempts++;
-        }
-        assertTrue(service.getAvailableCount() > 0, "Initial primes should be generated.");
-        long id1 = service.getNew();
+        // The @BeforeAll setUp method now ensures initial generation is complete.
+        // This test can now directly check the results.
+        assertTrue(service.isInitialGenerationPerformed(), "Initial generation should be marked as performed.");
+        assertTrue(service.getAvailableCount() > 0, "Initial primes should be generated and available.");
+        
+        long id1 = service.getNew(); // This should not block for long now
         assertTrue(id1 >= LOWER_BOUND, "Generated ID should be greater than or equal to LOWER_BOUND.");
     }
 
     @Test
     void testGetNew_ProvidesUniqueIDs() throws InterruptedException {
+        // @BeforeAll ensures initial generation. Subsequent requests might trigger replenishment,
+        // which should also be handled by the service.
         Set<Long> ids = new HashSet<>();
-        // Request enough IDs to potentially trigger replenishment
-        int idsToRequest = INITIAL_PRE_GENERATE_COUNT + REPLENISH_AMOUNT / 2; 
-        
-        // Ensure enough primes are available before starting, or wait
-        int initialAttempts = 0;
-        while(service.getAvailableCount() < REPLENISH_AMOUNT && initialAttempts < 100) {
-             Thread.sleep(50); // wait for generation
-             initialAttempts++;
-        }
-        if(service.getAvailableCount() < REPLENISH_AMOUNT && idsToRequest > service.getAvailableCount()){
-            // if not enough, reduce the request to what's available to avoid deadlock in test if generation is slow
-            idsToRequest = service.getAvailableCount();
-            System.err.println("Warning: Reducing idsToRequest in testGetNew_ProvidesUniqueIDs to " + idsToRequest + " due to slow initial prime generation.");
-        }
-        if(idsToRequest == 0 && service.getAvailableCount() == 0){
-             fail("No IDs available to test getNew_ProvidesUniqueIDs. Initial generation might have failed or is too slow.");
-        }
-
+        // Use a smaller number of IDs to request, as the large initial pool is already generated.
+        // This test focuses on uniqueness and basic replenishment triggering if necessary.
+        int idsToRequest = REPLENISH_AMOUNT + 50; // Test beyond one replenish amount
 
         for (int i = 0; i < idsToRequest; i++) {
-            ids.add(service.getNew());
+            long id = service.getNew();
+            assertTrue(ids.add(id), "Failed to add ID " + id + ", it's a duplicate. Iteration: " + i);
         }
         assertEquals(idsToRequest, ids.size(), "All requested IDs should be unique.");
     }
 
     @Test
     void testDelete_IDBecomesAvailableOrRemoved() throws InterruptedException {
-        // Ensure there's an ID to work with
-        if (service.getAvailableCount() == 0) {
-            // Try to get one to trigger generation if needed and wait for it
-            service.getNew(); // This might wait
-            int attempts = 0;
-            while (service.getAvailableCount() == 0 && attempts < 60) { // wait up to 3s
-                Thread.sleep(50);
-                attempts++;
-            }
-        }
-        // If still no ID, fail
-        if (service.getAvailableCount() == 0) {
-            fail("Could not obtain an ID to test deletion.");
-        }
-
+        // @BeforeAll ensures initial generation.
+        assertTrue(service.getAvailableCount() > 0, "Should have IDs available after initial setup.");
         long id = service.getNew();
         int initialAvailable = service.getAvailableCount();
         int initialActive = service.getActiveCount();
@@ -148,22 +118,11 @@ public class SharedIDServiceTest {
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
         CountDownLatch doneSignal = new CountDownLatch(numThreads);
 
-        // Pre-warm: Ensure enough IDs are available or can be generated quickly.
-        // This is to prevent all threads from immediately blocking on an empty 'available' set
-        // and then overwhelming the replenishment logic in a very spiky way.
-        long requiredInitial = Math.min(totalIdsToGenerate, INITIAL_PRE_GENERATE_COUNT + REPLENISH_AMOUNT);
-        int attempts = 0;
-        while (service.getAvailableCount() < requiredInitial && attempts < 200) { // wait up to 10s
-            Thread.sleep(50);
-            attempts++;
-            if (attempts % 20 == 0) { // Log progress if waiting long
-                 System.out.println("Waiting for primes for concurrency test... Available: " + service.getAvailableCount() + "/" + requiredInitial);
-            }
+        // Pre-warming for concurrency test is less critical now that @BeforeAll handles initial large generation.
+        // However, if idsPerThread is very large, a short check can still be useful.
+        if (service.getAvailableCount() < totalIdsToGenerate && totalIdsToGenerate > REPLENISH_AMOUNT) {
+             System.err.println("Warning: Concurrency test might require significant on-the-fly prime generation. Available: " + service.getAvailableCount() + ", Needed: " + totalIdsToGenerate);
         }
-         if (service.getAvailableCount() < REPLENISH_AMOUNT && service.getAvailableCount() < totalIdsToGenerate) {
-            System.err.println("Warning: Concurrency test might be slow or unstable due to insufficient initial primes. Available: " + service.getAvailableCount());
-        }
-
 
         for (int i = 0; i < numThreads; i++) {
             executorService.submit(() -> {

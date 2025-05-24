@@ -2,7 +2,7 @@ package org.example;
 
 import org.example.client.CLIClient;
 import org.example.client.PerformanceClient;
-// import org.example.utils.IDServiceParallel; // Removed
+import org.example.utils.SharedIDService; // Added import
 
 public class Main {
 
@@ -10,6 +10,10 @@ public class Main {
         long startTime = System.currentTimeMillis();
         // IDServiceParallel idService = new IDServiceParallel(10000); // Removed
         TicketShop ticketShop = new TicketShop(); // Changed constructor
+
+        // Wait for initial primes to be generated
+        SharedIDService.getInstance().awaitInitialGeneration(); // NEW LINE
+
 //        CLIClient CLIClient = new CLIClient(ticketShop);
 //        CLIClient.start();
         PerformanceClient performanceClient = new PerformanceClient(ticketShop);
