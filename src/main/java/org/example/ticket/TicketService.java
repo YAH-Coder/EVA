@@ -20,16 +20,15 @@ public class TicketService implements TicketServiceInterface {
     private final EventService eventService = EventService.getInstance();
     private static TicketService INSTANCE;
 
-    private TicketService() throws InterruptedException { // Changed signature, kept InterruptedException due to CS/ES.getInstance()
+    private TicketService() { // Removed throws InterruptedException
         this.tickets = new ConcurrentHashMap<>(); // Changed to ConcurrentHashMap
     }
 
-    public static TicketService getInstance() throws InterruptedException { // Kept InterruptedException
+    public static TicketService getInstance() { // Removed throws InterruptedException
         if (INSTANCE == null) {
             // Ensure initial ID generation is complete before creating TicketService instance.
-            // The constructor of TicketService calls getInstance() on CustomerService and EventService,
-            // which will also call awaitInitialGeneration(). The CountDownLatch handles multiple calls correctly.
-            SharedIDService.getInstance().awaitInitialGeneration();
+            // The constructor of TicketService calls getInstance() on CustomerService and EventService.
+            // SharedIDService.getInstance().awaitInitialGeneration(); // REMOVED
             INSTANCE = new TicketService(); 
         }
         return INSTANCE;

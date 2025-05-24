@@ -20,9 +20,9 @@ public class CustomerService implements CustomerServiceInterface {
 
     // As per clarification, getInstance might not need it if constructor is clean
     // but add methods will. Let's keep it on getInstance for now as per "Simplification for worker".
-    public static CustomerService getInstance() throws InterruptedException {
+    public static CustomerService getInstance() { // Removed throws InterruptedException
         if (INSTANCE == null) {
-            SharedIDService.getInstance().awaitInitialGeneration(); // Wait for IDs before creating service instance
+            // SharedIDService.getInstance().awaitInitialGeneration(); // REMOVED
             INSTANCE = new CustomerService();
         }
         return INSTANCE;

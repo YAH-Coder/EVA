@@ -18,9 +18,9 @@ public class EventService implements EventServiceInterface {
         // this.idService = new IDServiceParallel(10000); // Removed
     }
 
-    public static EventService getInstance() throws InterruptedException { // Kept throws InterruptedException as per clarification
+    public static EventService getInstance() { // Removed throws InterruptedException
         if(INSTANCE == null){
-            SharedIDService.getInstance().awaitInitialGeneration(); // Wait for IDs
+            // SharedIDService.getInstance().awaitInitialGeneration(); // REMOVED
             INSTANCE = new EventService();
         }
         return INSTANCE;
