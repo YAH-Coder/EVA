@@ -4,6 +4,7 @@ package org.example.ticket;
 import org.example.customer.CustomerService;
 import org.example.event.EventService;
 import org.example.utils.SharedIDService; // Added import
+import org.example.utils.StatisticsService;
 
 import java.time.LocalDateTime;
 import java.util.HashMap; // Will be replaced by ConcurrentHashMap
@@ -39,6 +40,7 @@ public class TicketService implements TicketServiceInterface {
         long id = SharedIDService.getInstance().getNew(); // Changed to SharedIDService
         Ticket ticket = new Ticket(id, purchaseDate, customerId, eventId);
         tickets.put(id, ticket);
+        StatisticsService.getInstance().recordIdAssigned("Ticket", ticket.getId());
         customerService.get(customerId).addTicket(eventId, id);
         eventService.get(eventId).decreaseNmbTickets();
         return ticket;

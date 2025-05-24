@@ -2,6 +2,7 @@ package org.example.event;
 
 // import org.example.utils.IDService; // IDService might be an interface
 import org.example.utils.SharedIDService; // Added import
+import org.example.utils.StatisticsService;
 
 import java.time.LocalDateTime;
 import java.util.HashMap; // Will be replaced by ConcurrentHashMap
@@ -31,6 +32,7 @@ public class EventService implements EventServiceInterface {
         long id = SharedIDService.getInstance().getNew(); // Changed to SharedIDService
         Event event = new Event(id, name, location, date, nmbTickets);
         events.put(id, event);
+        StatisticsService.getInstance().recordIdAssigned("Event", event.getId());
         return event;
     }
 

@@ -2,6 +2,7 @@ package org.example.customer;
 
 // import org.example.utils.IDService; // IDService might be an interface, let's see if it's used.
 import org.example.utils.SharedIDService; // Added import
+import org.example.utils.StatisticsService;
 
 import java.time.LocalDateTime;
 import java.util.HashMap; // Will be replaced by ConcurrentHashMap
@@ -34,6 +35,7 @@ public class CustomerService implements CustomerServiceInterface {
         long id = SharedIDService.getInstance().getNew(); // Changed to SharedIDService
         Customer customer = new Customer(id, username, email, birthday);
         customers.put(id, customer);
+        StatisticsService.getInstance().recordIdAssigned("Customer", customer.getId());
         return customer;
     }
 

@@ -7,6 +7,7 @@ import org.example.event.Event;
 import org.example.event.EventServiceInterface;
 import org.example.ticket.Ticket;
 import org.example.ticket.TicketServiceInterface;
+import org.example.utils.StatisticsService;
 
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
@@ -62,7 +63,13 @@ public class CLIClient {
         System.out.println("(h) - show help");
         System.out.println("(he) - show event help");
         System.out.println("(hc) - show customer help");
+        System.out.println("(stats) - show application statistics");
         System.out.println("(q) - quit");
+    }
+
+    private void showStatistics() {
+        System.out.println("Application Statistics:");
+        System.out.println(StatisticsService.getInstance().getStatistics());
     }
 
     private void newEvent() {
@@ -359,6 +366,9 @@ public class CLIClient {
                     break;
                 case "hc":
                     helpCustomer();
+                    break;
+                case "stats":
+                    showStatistics();
                     break;
                 case "q":
                 case "quit":

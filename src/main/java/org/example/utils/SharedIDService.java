@@ -15,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 // import java.util.concurrent.CountDownLatch; // To be removed
 import java.util.concurrent.ThreadFactory;
+import org.example.utils.StatisticsService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
@@ -148,6 +149,7 @@ public class SharedIDService {
 
                     for (int i = 0; i < tasksToLaunch; i++) {
                         Callable<List<Long>> segmentSieveTask = () -> {
+                            StatisticsService.getInstance().recordTaskExecution("PrimeSearchSegment", "PrimeSearcherPool", Thread.currentThread().getName());
                             long currentSegmentStart = nextSieveSegmentStart.getAndAdd(this.segmentSize);
                             // Ensure segmentStart does not exceed a max value if we have an upper bound for 10-digit primes (e.g., 9,999,999,999)
                             // For now, assume it can grow indefinitely and filtering of non-10-digit happens elsewhere or by context.
@@ -244,7 +246,7 @@ public class SharedIDService {
 
             // Replenishment is no longer triggered here. It's handled by the background orchestrator
             // monitoring idQueue.size() against QUEUE_LOW_WATER_MARK.
-            
+            StatisticsService.getInstance().recordIdGenerated("SharedIDService");
             return id;
         } catch (InterruptedException e) {
             LOGGER.log(Level.WARNING, "getNew() was interrupted while waiting to take ID from queue.", e);

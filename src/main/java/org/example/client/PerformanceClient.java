@@ -6,6 +6,7 @@ import org.example.customer.CustomerServiceInterface;
 import org.example.event.Event;
 import org.example.event.EventServiceInterface;
 import org.example.ticket.TicketServiceInterface;
+import org.example.utils.StatisticsService;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService; // Added import
@@ -51,6 +52,7 @@ public class PerformanceClient {
         for (int i = 0; i < nmbOfEvents; i++) {
             final int eventIndex = i; // Effectively final for use in lambda
             clientTaskExecutor.submit(() -> {
+                StatisticsService.getInstance().recordTaskExecution("CreateEventTask", "PerformanceClientExecutor", Thread.currentThread().getName());
                 try {
                     eventService.add("Event" + eventIndex, "Uni", LocalDateTime.now().plusDays(1), nmbOfTickets);
                 } catch (InterruptedException e) {
