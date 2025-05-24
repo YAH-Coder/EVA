@@ -25,7 +25,11 @@ public class TicketService implements TicketServiceInterface {
 
     public static TicketService getInstance() throws InterruptedException { // Kept InterruptedException
         if (INSTANCE == null) {
-            INSTANCE = new TicketService(); // Changed: no longer passing idService
+            // Ensure initial ID generation is complete before creating TicketService instance.
+            // The constructor of TicketService calls getInstance() on CustomerService and EventService,
+            // which will also call awaitInitialGeneration(). The CountDownLatch handles multiple calls correctly.
+            SharedIDService.getInstance().awaitInitialGeneration();
+            INSTANCE = new TicketService(); 
         }
         return INSTANCE;
     }

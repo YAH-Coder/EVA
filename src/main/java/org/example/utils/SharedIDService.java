@@ -19,9 +19,9 @@ public class SharedIDService {
     private static final Logger LOGGER = Logger.getLogger(SharedIDService.class.getName());
 
     private static final long LOWER_BOUND = 1_000_000_000L;
-    private static final long INITIAL_PRE_GENERATE_COUNT = 500_000L; // Changed to 500,000L
-    private static final long REPLENISH_THRESHOLD = 100_000L; // Adjusted to 20% of REPLENISH_AMOUNT (500_000)
-    private static final long REPLENISH_AMOUNT = 500_000L; // Changed to 500,000L and type to long
+    private static final long INITIAL_PRE_GENERATE_COUNT = 20_000L; // Changed to 20,000L
+    private static final long REPLENISH_THRESHOLD = 4_000L;    // Changed to 4,000L (20% of new REPLENISH_AMOUNT)
+    private static final long REPLENISH_AMOUNT = 20_000L;     // Changed to 20,000L
 
     private final Set<Long> available = ConcurrentHashMap.newKeySet();
     private final Set<Long> active = ConcurrentHashMap.newKeySet();

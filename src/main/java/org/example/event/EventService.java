@@ -19,6 +19,7 @@ public class EventService implements EventServiceInterface {
 
     public static EventService getInstance() throws InterruptedException { // Kept throws InterruptedException as per clarification
         if(INSTANCE == null){
+            SharedIDService.getInstance().awaitInitialGeneration(); // Wait for IDs
             INSTANCE = new EventService();
         }
         return INSTANCE;

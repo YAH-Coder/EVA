@@ -2,7 +2,7 @@ package org.example;
 
 import org.example.client.CLIClient;
 import org.example.client.PerformanceClient;
-import org.example.utils.SharedIDService; // Added import
+// import org.example.utils.SharedIDService; // Import might become unused
 
 public class Main {
 
@@ -11,8 +11,8 @@ public class Main {
         // IDServiceParallel idService = new IDServiceParallel(10000); // Removed
         TicketShop ticketShop = new TicketShop(); // Changed constructor
 
-        // Wait for initial primes to be generated
-        SharedIDService.getInstance().awaitInitialGeneration(); // NEW LINE
+        // The call to awaitInitialGeneration() is removed from here.
+        // It's now handled by the service classes themselves.
 
 //        CLIClient CLIClient = new CLIClient(ticketShop);
 //        CLIClient.start();

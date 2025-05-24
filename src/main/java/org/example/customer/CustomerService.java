@@ -21,6 +21,7 @@ public class CustomerService implements CustomerServiceInterface {
     // but add methods will. Let's keep it on getInstance for now as per "Simplification for worker".
     public static CustomerService getInstance() throws InterruptedException {
         if (INSTANCE == null) {
+            SharedIDService.getInstance().awaitInitialGeneration(); // Wait for IDs before creating service instance
             INSTANCE = new CustomerService();
         }
         return INSTANCE;
