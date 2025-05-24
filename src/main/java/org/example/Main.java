@@ -2,14 +2,14 @@ package org.example;
 
 import org.example.client.CLIClient;
 import org.example.client.PerformanceClient;
-import org.example.utils.IDServiceParallel;
+// import org.example.utils.IDServiceParallel; // Removed
 
 public class Main {
 
     public static void main(String[] args) throws InterruptedException {
         long startTime = System.currentTimeMillis();
-        IDServiceParallel idService = new IDServiceParallel(10000);
-        TicketShop ticketShop = new TicketShop(idService);
+        // IDServiceParallel idService = new IDServiceParallel(10000); // Removed
+        TicketShop ticketShop = new TicketShop(); // Changed constructor
 //        CLIClient CLIClient = new CLIClient(ticketShop);
 //        CLIClient.start();
         PerformanceClient performanceClient = new PerformanceClient(ticketShop);
