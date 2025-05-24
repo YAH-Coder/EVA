@@ -27,6 +27,7 @@ public class SharedIDService {
 
     private final ExecutorService primeGeneratorExecutor; // Orchestrator
     private final ExecutorService primeSearcherPool;    // Worker pool for parallel search
+    private final int numPrimeSearcherThreads; // Added field
 
     private volatile long nextLowerBoundForGeneration = LOWER_BOUND;
     private Future<?> lastGenerationTaskFuture; // To track the ongoing generation task
@@ -53,8 +54,10 @@ public class SharedIDService {
                 return t;
             }
         };
-        int numSearcherThreads = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
-        this.primeSearcherPool = Executors.newFixedThreadPool(numSearcherThreads, primeSearcherThreadFactory);
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        int localNumSearcherThreads = Math.max(1, (availableProcessors * 7) / 8);
+        this.numPrimeSearcherThreads = localNumSearcherThreads; // Assign to field
+        this.primeSearcherPool = Executors.newFixedThreadPool(this.numPrimeSearcherThreads, primeSearcherThreadFactory); // Use field
 
         schedulePrimeGeneration(INITIAL_PRE_GENERATE_COUNT);
 
@@ -103,8 +106,7 @@ public class SharedIDService {
 
             LOGGER.info("Orchestrating prime generation batch. Target count: " + countToGenerateInThisBatch + ", Starting search from lower bound: " + currentGlobalBatchStartBound);
 
-            int numSearcherCoreThreads = Math.max(2, Runtime.getRuntime().availableProcessors() / 2); // Align with pool creation
-            int numSubTasks = Math.max(1, numSearcherCoreThreads); 
+            int numSubTasks = this.numPrimeSearcherThreads; // Use field here
             long primesToFindPerSubTask = (countToGenerateInThisBatch + numSubTasks - 1) / numSubTasks;
 
             if (primesToFindPerSubTask <= 0) {
