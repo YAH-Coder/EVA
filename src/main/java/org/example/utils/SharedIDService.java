@@ -50,14 +50,13 @@ public class SharedIDService {
     }
 
     private void schedulePrimeGeneration(long count) {
-        if (lastGenerationTaskFuture != null && !lastGenerationTaskFuture.isDone()) {
-            LOGGER.info("Prime generation task is already in progress. Skipping new schedule for now.");
-            return;
-        }
+        // Removed the check for lastGenerationTaskFuture.isDone()
+        // to allow tasks to queue up.
         
         PrimeNumberGeneratorTask task = new PrimeNumberGeneratorTask(nextLowerBoundForGeneration, count);
         LOGGER.info("Scheduling prime generation from " + nextLowerBoundForGeneration + " for " + count + " primes.");
 
+        // Storing the future is still useful if we want to inspect it, but it's not used to prevent scheduling.
         lastGenerationTaskFuture = primeGeneratorExecutor.submit(() -> {
             try {
                 Set<Long> generatedPrimes = task.call();
