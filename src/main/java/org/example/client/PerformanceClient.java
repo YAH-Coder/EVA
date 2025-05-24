@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService; // Added import
 import java.util.concurrent.Executors;     // Added import
 import java.util.concurrent.ThreadFactory;  // Added import
+import java.util.concurrent.CountDownLatch; // Added import
 
 public class PerformanceClient {
     private final EventServiceInterface eventService;
@@ -45,10 +46,35 @@ public class PerformanceClient {
 
     public void createEvents(int nmbOfEvents, int nmbOfTickets) throws InterruptedException {
         long startTime = System.currentTimeMillis();
+        CountDownLatch latch = new CountDownLatch(nmbOfEvents);
+
         for (int i = 0; i < nmbOfEvents; i++) {
-            eventService.add("Event" + i, "Uni", LocalDateTime.now().plusDays(1), nmbOfTickets);
+            final int eventIndex = i; // Effectively final for use in lambda
+            clientTaskExecutor.submit(() -> {
+                try {
+                    eventService.add("Event" + eventIndex, "Uni", LocalDateTime.now().plusDays(1), nmbOfTickets);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Preserve interrupt status
+                    System.err.println("Event creation task for Event" + eventIndex + " was interrupted: " + e.getMessage());
+                } catch (Exception e) {
+                    System.err.println("Exception during creation of Event" + eventIndex + ": " + e.getMessage());
+                    // Depending on desired behavior, you might log e.printStackTrace() or handle more robustly
+                } finally {
+                    latch.countDown();
+                }
+            });
         }
-        System.out.println("Creating " + nmbOfEvents + " Events took " + (System.currentTimeMillis() - startTime) + "ms");
+
+        try {
+            latch.await(); // Wait for all tasks to complete
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Preserve interrupt status
+            System.err.println("Interrupted while waiting for event creation tasks to complete: " + e.getMessage());
+            // Optionally, attempt to shutdown clientTaskExecutor more aggressively if main thread is interrupted.
+            // clientTaskExecutor.shutdownNow(); 
+        }
+        
+        System.out.println("Parallel creation of " + nmbOfEvents + " Events took " + (System.currentTimeMillis() - startTime) + "ms using " + this.numClientThreads + " threads.");
     }
 
     public void createCustomers(int nmbOfCustomers) throws InterruptedException {

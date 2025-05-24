@@ -4,16 +4,22 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue; // Added import
-import java.util.concurrent.BlockingQueue; // Added import
+import java.util.Collections; // Added import
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable; // Added import
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException; // Added import
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 // import java.util.concurrent.CountDownLatch; // To be removed
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
+import org.example.utils.sieve.JavaSegmentedSieveGenerator;
+import org.example.utils.sieve.PrimeSegmentGenerator;
 import java.util.logging.Logger;
 import java.util.NoSuchElementException; // Added for delete
 
@@ -27,8 +33,8 @@ public class SharedIDService {
     // private static final long REPLENISH_AMOUNT = 20_000L;     
 
     // New constants for BlockingQueue
-    private static final int QUEUE_CAPACITY = 2048;
-    private static final int QUEUE_LOW_WATER_MARK = QUEUE_CAPACITY / 4; // e.g., 512
+    public static final int QUEUE_CAPACITY = 4096; // Updated and made public
+    public static final int QUEUE_LOW_WATER_MARK = 2048; // Updated (QUEUE_CAPACITY / 2) and made public
 
     // Replaced available and active sets with idQueue
     // private final Set<Long> available = ConcurrentHashMap.newKeySet(); // Removed
@@ -39,8 +45,13 @@ public class SharedIDService {
     private final ExecutorService primeSearcherPool;    // Worker pool for parallel search
     private final int numPrimeSearcherThreads; 
 
-    private volatile long nextLowerBoundForGeneration = LOWER_BOUND;
-    private Future<?> lastGenerationTaskFuture; 
+    // private volatile long nextLowerBoundForGeneration = LOWER_BOUND; // Removed old field
+    private Future<?> lastGenerationTaskFuture; // This might be repurposed or removed if not used by new orchestrator logic
+
+    // New fields for Sieve-based generation
+    private final PrimeSegmentGenerator primeSieveGenerator;
+    private final AtomicLong nextSieveSegmentStart;
+    private final int segmentSize = 1_048_576; // Default segment size (2^20)
 
     // Fields for awaitable initial generation REMOVED
     // private final CountDownLatch initialGenerationLatch;
@@ -49,6 +60,8 @@ public class SharedIDService {
 
     private SharedIDService() {
         this.idQueue = new ArrayBlockingQueue<>(QUEUE_CAPACITY); // Initialize idQueue
+        this.primeSieveGenerator = new JavaSegmentedSieveGenerator(); // Initialize Sieve Generator
+        this.nextSieveSegmentStart = new AtomicLong(LOWER_BOUND); // Initialize Sieve Start (using existing LOWER_BOUND)
 
         // this.initialGenerationLatch = new CountDownLatch(1); // Removed latch initialization
 
@@ -115,99 +128,90 @@ public class SharedIDService {
 
     // New primeGenerationOrchestrationLoop method
     private void primeGenerationOrchestrationLoop() {
-        LOGGER.info("Prime generation orchestrator started.");
+        LOGGER.info("Prime generation orchestrator started (segmented sieve model).");
+        // Estimate for allocating array within Callable, segmentSize is 1,048,576
+        // Max prime density for 10-digit numbers (around 1/ln(10^9) ~ 1/20.7).
+        // So, segmentSize / 20 is approx 50k. Add some buffer. Let's use segmentSize / 15.
+        final int estimatedMaxPrimesPerSegment = this.segmentSize / 15; 
+
         try {
             while (!Thread.currentThread().isInterrupted()) {
                 int currentQueueSize = idQueue.size();
                 if (currentQueueSize < QUEUE_LOW_WATER_MARK) {
-                    long primesToGenerate = QUEUE_CAPACITY - currentQueueSize;
-                    if (primesToGenerate <= 0) { 
-                         LOGGER.fine("Queue size is " + currentQueueSize + ", no primes needed for now despite being below low water mark. Sleeping.");
-                         Thread.sleep(500); 
-                         continue;
+                    long primesNeededApprox = QUEUE_CAPACITY - currentQueueSize;
+                    LOGGER.info("Queue size (" + currentQueueSize + ") is below low water mark (" + QUEUE_LOW_WATER_MARK + "). Aiming to add approx. " + primesNeededApprox + " primes.");
+
+                    int tasksToLaunch = this.numPrimeSearcherThreads; // Launch one segment-processing task per searcher thread
+                    List<Future<List<Long>>> subTaskFutures = new ArrayList<>(tasksToLaunch);
+
+                    LOGGER.fine("Orchestrator: Submitting " + tasksToLaunch + " segment sieving tasks to PrimeSearcherPool.");
+
+                    for (int i = 0; i < tasksToLaunch; i++) {
+                        Callable<List<Long>> segmentSieveTask = () -> {
+                            long currentSegmentStart = nextSieveSegmentStart.getAndAdd(this.segmentSize);
+                            // Ensure segmentStart does not exceed a max value if we have an upper bound for 10-digit primes (e.g., 9,999,999,999)
+                            // For now, assume it can grow indefinitely and filtering of non-10-digit happens elsewhere or by context.
+                            // SharedIDService is meant for 10-digit primes (>= 1,000,000,000)
+
+                            LOGGER.fine("PrimeSearcher task starting: Segment [" + currentSegmentStart + " to " + (currentSegmentStart + this.segmentSize - 1) + "]");
+                            long[] primesInSegmentArray = new long[estimatedMaxPrimesPerSegment];
+                            int primeCountInSegment = 0;
+                            try {
+                                primeCountInSegment = this.primeSieveGenerator.generatePrimes(currentSegmentStart, this.segmentSize, primesInSegmentArray);
+                            } catch (IllegalArgumentException e) {
+                                // This might happen if outPrimes is too small, log and return empty.
+                                LOGGER.log(Level.SEVERE, "Error generating primes for segment " + currentSegmentStart + ": " + e.getMessage(), e);
+                                return Collections.emptyList(); // Return empty list on error
+                            }
+                            
+                            List<Long> resultList = new ArrayList<>(primeCountInSegment);
+                            for (int j = 0; j < primeCountInSegment; j++) {
+                                resultList.add(primesInSegmentArray[j]);
+                            }
+                            LOGGER.fine("PrimeSearcher task finished: Segment [" + currentSegmentStart + "]. Found " + primeCountInSegment + " primes.");
+                            return resultList;
+                        };
+                        subTaskFutures.add(primeSearcherPool.submit(segmentSieveTask));
                     }
 
-                    LOGGER.info("Queue size (" + currentQueueSize + ") is below low water mark (" + QUEUE_LOW_WATER_MARK + "). Need to generate " + primesToGenerate + " primes.");
-
-                    long batchStartBound = this.nextLowerBoundForGeneration;
-                                                                        
-                    int numSubTasks = this.numPrimeSearcherThreads;
-                    long primesPerSubTask = (primesToGenerate + numSubTasks - 1) / numSubTasks; // Ceiling division
-
-                    if (primesPerSubTask <= 0) {
-                         LOGGER.warning("Calculated primesPerSubTask is " + primesPerSubTask + ", skipping generation cycle.");
-                         Thread.sleep(500); 
-                         continue;
-                    }
-                    
-                    List<Future<Set<Long>>> subTaskFutures = new ArrayList<>();
-                    LOGGER.fine("Orchestrator: Submitting " + numSubTasks + " sub-tasks to find approx. " + primesPerSubTask + " primes each, starting search from global bound " + batchStartBound);
-
-                    for (int i = 0; i < numSubTasks; i++) {
-                        PrimeNumberGeneratorTask subTask = new PrimeNumberGeneratorTask(batchStartBound, primesPerSubTask);
-                        subTaskFutures.add(primeSearcherPool.submit(subTask));
-                    }
-
-                    Set<Long> allNewPrimesForThisBatch = new HashSet<>();
-                    long maxPrimeFoundInThisBatch = 0L;
-
-                    for (Future<Set<Long>> future : subTaskFutures) {
+                    int totalPrimesAddedThisCycle = 0;
+                    for (Future<List<Long>> future : subTaskFutures) {
+                        if (Thread.currentThread().isInterrupted()) break; // Orchestrator interrupted
                         try {
-                            Set<Long> primesFromSubTask = future.get();
-                            if (primesFromSubTask != null && !primesFromSubTask.isEmpty()) {
-                                allNewPrimesForThisBatch.addAll(primesFromSubTask);
-                                for (long p : primesFromSubTask) {
-                                    if (p > maxPrimeFoundInThisBatch) maxPrimeFoundInThisBatch = p;
+                            List<Long> primesFromSegment = future.get(); // Wait for each segment to be processed
+                            if (primesFromSegment != null && !primesFromSegment.isEmpty()) {
+                                for (Long prime : primesFromSegment) {
+                                    if (Thread.currentThread().isInterrupted()) break;
+                                    idQueue.put(prime); // Blocks if queue is full; handles backpressure
+                                    totalPrimesAddedThisCycle++;
                                 }
                             }
                         } catch (InterruptedException e) {
-                            LOGGER.log(Level.WARNING, "Orchestrator's prime generation sub-task was interrupted.", e);
-                            Thread.currentThread().interrupt(); 
+                            LOGGER.log(Level.WARNING, "Orchestrator interrupted while waiting for future or putting prime to queue.", e);
+                            Thread.currentThread().interrupt(); // Preserve interrupt status
                             break; 
-                        } catch (Exception e) {
-                            LOGGER.log(Level.SEVERE, "Exception in prime generation sub-task.", e);
+                        } catch (ExecutionException e) {
+                            LOGGER.log(Level.SEVERE, "Exception in prime generation sub-task (retrieved via Future).", e.getCause());
                         }
                     }
 
                     if (Thread.currentThread().isInterrupted()) {
-                        LOGGER.warning("Orchestrator thread interrupted, breaking generation loop.");
+                        LOGGER.warning("Orchestrator thread interrupted during result processing, breaking generation loop.");
                         break; 
                     }
-
-                    if (!allNewPrimesForThisBatch.isEmpty()) {
-                        LOGGER.info("Batch generated " + allNewPrimesForThisBatch.size() + " unique primes. Max prime in batch: " + maxPrimeFoundInThisBatch + ". Adding to queue...");
-                        int addedCount = 0;
-                        for (Long prime : allNewPrimesForThisBatch) { 
-                            if (Thread.currentThread().isInterrupted()) {
-                                LOGGER.warning("Orchestrator interrupted while adding primes to queue.");
-                                break;
-                            }
-                            idQueue.put(prime); 
-                            addedCount++;
-                        }
-                        LOGGER.info("Added " + addedCount + " primes to queue. New queue size: " + idQueue.size());
+                    if (totalPrimesAddedThisCycle > 0) {
+                        LOGGER.info("Orchestration cycle complete. Added " + totalPrimesAddedThisCycle + " primes to queue. New queue size: " + idQueue.size());
                     } else {
-                        LOGGER.warning("Prime generation batch yielded no new unique primes. Search started from: " + batchStartBound);
+                        LOGGER.info("Orchestration cycle complete. No new primes were added to the queue.");
                     }
-                    
-                    if (maxPrimeFoundInThisBatch >= batchStartBound) {
-                        this.nextLowerBoundForGeneration = maxPrimeFoundInThisBatch + 1;
-                        if (this.nextLowerBoundForGeneration % 2 == 0) this.nextLowerBoundForGeneration++;
-                    } else {
-                        long estimatedRangeSearchedTotal = primesToGenerate * 20; 
-                        this.nextLowerBoundForGeneration = batchStartBound + estimatedRangeSearchedTotal;
-                        if (this.nextLowerBoundForGeneration % 2 == 0) this.nextLowerBoundForGeneration++;
-                        LOGGER.warning("Max prime in batch was not greater than start bound. Advancing next global lower bound heuristically to " + this.nextLowerBoundForGeneration);
-                    }
-                    LOGGER.info("Next global lower bound for prime generation updated to: " + this.nextLowerBoundForGeneration);
 
-                } else {
+                } else { // Queue is sufficiently full
                     LOGGER.fine("Queue is sufficiently full (size: " + currentQueueSize + "). Orchestrator sleeping.");
-                    Thread.sleep(500); 
+                    Thread.sleep(500); // Polling interval when queue is full
                 }
             }
         } catch (InterruptedException e) {
-            LOGGER.info("Prime generation orchestrator thread interrupted. Shutting down.");
+            LOGGER.info("Prime generation orchestrator thread interrupted. Loop terminating.");
             Thread.currentThread().interrupt(); 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Unhandled exception in prime generation orchestrator loop. Loop will terminate.", e);
@@ -271,9 +275,9 @@ public class SharedIDService {
     // }
 
     // Method to get current nextLowerBoundForGeneration, useful for testing
-    public long getNextLowerBoundForGeneration() {
-        return nextLowerBoundForGeneration;
-    }
+    // public long getNextLowerBoundForGeneration() { // To be replaced by nextSieveSegmentStart.get()
+    //     return nextLowerBoundForGeneration;
+    // }
 
     // Method to check if initial generation is done (useful for testing)
     // public boolean isInitialGenerationPerformed() { // REMOVED
