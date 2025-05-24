@@ -301,8 +301,8 @@ class SharedIDServiceIntegrationTest {
         // The Sieve generator starts from MIN_ID_VALUE.
         
         List<Long> expectedFirstTenPrimes = List.of(
-            1000000007L, 1000000009L, 1000000019L, 1000000037L, 1000000061L,
-            1000000067L, 1000000091L, 1000000093L, 1000000097L, 1000000103L
+            1000000007L, 1000000009L, 1000000021L, 1000000033L, 1000000087L,
+            1000000093L, 1000000097L, 1000000103L, 1000000123L, 1000000181L
         );
         
         ArrayList<Long> retrievedIds = new ArrayList<>();
