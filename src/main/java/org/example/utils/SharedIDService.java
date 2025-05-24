@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory; // Added import
 import java.util.concurrent.TimeUnit; // Added for awaitTermination
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,7 +22,16 @@ public class SharedIDService {
     private final Set<Long> available = ConcurrentHashMap.newKeySet();
     private final Set<Long> active = ConcurrentHashMap.newKeySet();
 
-    private final ExecutorService primeGeneratorExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService primeGeneratorExecutor = 
+        Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = Executors.defaultThreadFactory().newThread(r);
+                t.setDaemon(true); // Make the thread a daemon thread
+                t.setName("SharedIDService-PrimeGenerator"); // Optional: give it a descriptive name
+                return t;
+            }
+        });
     private volatile long nextLowerBoundForGeneration = LOWER_BOUND;
     private Future<?> lastGenerationTaskFuture; // To track the ongoing generation task
 
