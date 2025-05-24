@@ -6,11 +6,12 @@ import org.example.event.EventService;
 import org.example.utils.SharedIDService; // Added import
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.HashMap; // Will be replaced by ConcurrentHashMap
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentHashMap; // Added import
 
 public class TicketService implements TicketServiceInterface {
-    private final HashMap<Long, Ticket> tickets;
+    private final ConcurrentHashMap<Long, Ticket> tickets; // Changed to ConcurrentHashMap
     // private static final IDServiceParallel idService; // Removed
 
     // Static initializer block removed
@@ -20,7 +21,7 @@ public class TicketService implements TicketServiceInterface {
     private static TicketService INSTANCE;
 
     private TicketService() throws InterruptedException { // Changed signature, kept InterruptedException due to CS/ES.getInstance()
-        this.tickets = new HashMap<>();
+        this.tickets = new ConcurrentHashMap<>(); // Changed to ConcurrentHashMap
     }
 
     public static TicketService getInstance() throws InterruptedException { // Kept InterruptedException

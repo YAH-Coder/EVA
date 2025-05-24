@@ -8,16 +8,39 @@ import org.example.event.EventServiceInterface;
 import org.example.ticket.TicketServiceInterface;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.ExecutorService; // Added import
+import java.util.concurrent.Executors;     // Added import
+import java.util.concurrent.ThreadFactory;  // Added import
 
 public class PerformanceClient {
     private final EventServiceInterface eventService;
     private final CustomerServiceInterface customerService;
     private final TicketServiceInterface ticketService;
+    private final ExecutorService clientTaskExecutor; // Added field
+    private final int numClientThreads;             // Added field
 
     public PerformanceClient(TicketShop ticketShop) {
         this.eventService = ticketShop.getEventServiceInterface();
         this.customerService = ticketShop.getCustomerServiceInterface();
         this.ticketService = ticketShop.getTicketServiceInterface();
+
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        this.numClientThreads = Math.max(1, availableProcessors / 8); // Use approx 1/8th of cores, min 1
+
+        ThreadFactory clientThreadFactory = new ThreadFactory() {
+            private int counter = 0;
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = Executors.defaultThreadFactory().newThread(r);
+                t.setDaemon(true); // Client tasks can be daemon threads
+                t.setName("PerformanceClient-Worker-" + counter++);
+                return t;
+            }
+        };
+        this.clientTaskExecutor = Executors.newFixedThreadPool(this.numClientThreads, clientThreadFactory);
+        
+        // Log the number of threads being used by PerformanceClient
+        System.out.println("PerformanceClient initialized with " + this.numClientThreads + " worker threads.");
     }
 
     public void createEvents(int nmbOfEvents, int nmbOfTickets) throws InterruptedException {

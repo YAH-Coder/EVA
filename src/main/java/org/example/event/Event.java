@@ -1,13 +1,14 @@
 package org.example.event;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger; // Added import
 
 public class Event {
     private final long id;
     private String name;
     private String location;
     private LocalDateTime date;
-    private int nmbTickets;
+    private AtomicInteger nmbTickets; // Changed to AtomicInteger
 
     public Event(long id, String name, String location, LocalDateTime date, int nmbTickets) {
         this.id = id;
@@ -20,11 +21,11 @@ public class Event {
         if (nmbTickets < 0) {
             throw new IllegalArgumentException("Number of tickets cannot be negative");
         }
-        this.nmbTickets = nmbTickets;
+        this.nmbTickets = new AtomicInteger(nmbTickets); // Changed to AtomicInteger
     }
 
     public Event(Event other) {
-        this(other.id, other.name, other.location, other.date, other.nmbTickets);
+        this(other.id, other.name, other.location, other.date, other.nmbTickets.get()); // Use .get() for AtomicInteger
     }
 
     public long getId() {
@@ -68,32 +69,38 @@ public class Event {
     }
 
     public int getNmbTickets() {
-        return nmbTickets;
+        return nmbTickets.get(); // Use .get() for AtomicInteger
     }
 
     public void setNmbTickets(int nmbTickets) {
         if (nmbTickets < 0) {
             throw new IllegalArgumentException("Number of tickets cannot be negative");
         }
-        this.nmbTickets = nmbTickets;
+        this.nmbTickets.set(nmbTickets); // Use .set() for AtomicInteger
     }
 
     public void decreaseNmbTickets() {
-        if (nmbTickets == 0) {
-            throw new RuntimeException("Can't decrease amount of tickets below 0");
+        while (true) {
+            int current = nmbTickets.get();
+            if (current == 0) {
+                throw new RuntimeException("Can't decrease amount of tickets below 0");
+            }
+            if (nmbTickets.compareAndSet(current, current - 1)) {
+                break; // Successfully decremented
+            }
+            // If CAS failed, loop again (another thread modified nmbTickets)
         }
-        this.nmbTickets -= 1;
     }
 
     public void increaseNmbTickets() {
-        this.nmbTickets += 1;
+        this.nmbTickets.incrementAndGet(); // Use atomic operation
     }
 
     @Override
     public String toString() {
         return String.format(
                 "Id: %d%nName: %s%nLocation: %s%nDate: %s%nNumber of Tickets: %d",
-                id, name, location, date, nmbTickets
+                id, name, location, date, nmbTickets.get() // Use .get() for AtomicInteger
         );
     }
 }

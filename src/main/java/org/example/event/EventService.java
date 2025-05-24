@@ -4,16 +4,17 @@ package org.example.event;
 import org.example.utils.SharedIDService; // Added import
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.HashMap; // Will be replaced by ConcurrentHashMap
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentHashMap; // Added import
 
 public class EventService implements EventServiceInterface {
-    private final HashMap<Long, Event> events;
+    private final ConcurrentHashMap<Long, Event> events; // Changed to ConcurrentHashMap
     // private final IDServiceParallel idService; // Removed
     private static EventService INSTANCE;
 
     private EventService() { // Removed throws InterruptedException
-        this.events = new HashMap<>();
+        this.events = new ConcurrentHashMap<>(); // Changed to ConcurrentHashMap
         // this.idService = new IDServiceParallel(10000); // Removed
     }
 

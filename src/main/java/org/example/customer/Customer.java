@@ -34,17 +34,22 @@ public class Customer {
         this.tickets = new HashMap<Long, HashSet<Long>>();
     }
 
-    public void addTicket(long eventId, long ticketId) {
+    public synchronized void addTicket(long eventId, long ticketId) { // Added synchronized
         if (tickets.containsKey(eventId)) {
             if (tickets.get(eventId).size() < 5) {
                 tickets.get(eventId).add(ticketId);
             } else {
                 throw new RuntimeException("Can't purchase more than 5 tickets for a single event");
             }
+        } else {
+            // If the eventId is not in the map, create a new HashSet for it
+            HashSet<Long> newTicketSet = new HashSet<>();
+            newTicketSet.add(ticketId);
+            tickets.put(eventId, newTicketSet);
         }
     }
 
-    public void remooveTicket(long eventId, long ticketId) {
+    public synchronized void removeTicket(long eventId, long ticketId) { // Renamed and added synchronized
         if (tickets.containsKey(eventId)) {
             tickets.get(eventId).remove(ticketId);
         } else {

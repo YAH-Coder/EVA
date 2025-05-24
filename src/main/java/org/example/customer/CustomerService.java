@@ -4,16 +4,17 @@ package org.example.customer;
 import org.example.utils.SharedIDService; // Added import
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.HashMap; // Will be replaced by ConcurrentHashMap
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentHashMap; // Added import
 
 public class CustomerService implements CustomerServiceInterface {
-    private final HashMap<Long, Customer> customers;
+    private final ConcurrentHashMap<Long, Customer> customers; // Changed to ConcurrentHashMap
     // private final IDServiceParallel idService; // Removed
     private static CustomerService INSTANCE;
 
     private CustomerService() { // Removed throws InterruptedException
-        this.customers = new HashMap<>();
+        this.customers = new ConcurrentHashMap<>(); // Changed to ConcurrentHashMap
         // this.idService = new IDServiceParallel(1000); // Removed
     }
 
