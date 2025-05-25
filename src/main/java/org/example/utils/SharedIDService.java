@@ -24,6 +24,51 @@ import org.example.utils.sieve.PrimeSegmentGenerator;
 import java.util.logging.Logger;
 import java.util.NoSuchElementException; // Added for delete
 
+/**
+ * Manages the generation and distribution of unique, 10-digit prime IDs in a multithreaded environment.
+ *
+ * <p><b>Architectural Overview:</b></p>
+ * <p>
+ * The {@code SharedIDService} employs a sophisticated producer-consumer pattern to efficiently provide prime IDs.
+ * It is designed to minimize contention and latency when requesting new IDs, primarily through pre-generation
+ * and a queuing mechanism.
+ * </p>
+ * <ul>
+ *   <li><b>Producer-Consumer with BlockingQueue:</b>
+ *     <ul>
+ *       <li>Prime IDs are generated asynchronously and stored in a {@link java.util.concurrent.BlockingQueue} (specifically, an {@link java.util.concurrent.ArrayBlockingQueue}).
+ *       <li>Consumers (various service classes like {@code CustomerService}, {@code EventService}, {@code TicketService}) request IDs via the {@link #getNew()} method, which takes an ID from the queue. If the queue is empty, the call blocks until an ID becomes available.
+ *       <li>When an ID is no longer in use (e.g., an entity is deleted), it can be returned to the queue via the {@link #delete(long)} method, making it available for reuse if the queue has space.
+ *     </ul>
+ *   </li>
+ *   <li><b>Prime Generation Orchestration (Producer Side):</b>
+ *     <ul>
+ *       <li>A dedicated single-thread executor, {@code primeGeneratorExecutor}, acts as an orchestrator. It runs the {@code primeGenerationOrchestrationLoop}.
+ *       <li>This loop monitors the size of the {@code idQueue}. If the number of available IDs falls below a {@link #QUEUE_LOW_WATER_MARK}, it triggers new prime generation.
+ *     </ul>
+ *   </li>
+ *   <li><b>Parallel Prime Searching (Sieve Workers):</b>
+ *     <ul>
+ *       <li>The actual prime number generation is performed by a pool of worker threads, {@code primeSearcherPool}.
+ *       <li>The orchestrator divides the search space (large number ranges) into segments. Each segment is processed by a task submitted to the {@code primeSearcherPool}.
+ *       <li>These tasks use a {@link org.example.utils.sieve.PrimeSegmentGenerator} (specifically, {@link org.example.utils.sieve.JavaSegmentedSieveGenerator}) which implements the Sieve of Eratosthenes algorithm optimized for segments. This allows for efficient prime finding in large ranges.
+ *       <li>The {@code nextSieveSegmentStart} {@link java.util.concurrent.atomic.AtomicLong} ensures that different worker threads process distinct segments of the number line, starting from {@code LOWER_BOUND}.
+ *     </ul>
+ *   </li>
+ *   <li><b>Performance and Scalability:</b>
+ *     <ul>
+ *       <li>Pre-generating IDs and storing them in a queue significantly reduces the time taken by {@link #getNew()}, as it often involves a quick queue retrieval rather than on-demand prime generation.
+ *       <li>The use of a fixed-size thread pool ({@code primeSearcherPool}) allows for parallel computation of primes, leveraging multi-core processors to speed up the generation process.
+ *       <li>The segmented sieve approach is more memory-efficient than a simple sieve for very large ranges.
+ *       <li>Backpressure is naturally handled: if the {@code idQueue} is full, the orchestrator's attempts to {@code put()} new primes will block, preventing excessive memory usage from over-generation.
+ *     </ul>
+ *   </li>
+ * </ul>
+ * <p>
+ * The service is implemented as a singleton, accessible via {@link #getInstance()}. It also includes a shutdown hook
+ * to gracefully terminate its internal thread pools when the application exits.
+ * </p>
+ */
 public class SharedIDService {
     private static final Logger LOGGER = Logger.getLogger(SharedIDService.class.getName());
 
@@ -123,6 +168,12 @@ public class SharedIDService {
         private static final SharedIDService INSTANCE = new SharedIDService();
     }
 
+    /**
+     * Returns the singleton instance of the SharedIDService.
+     * This is the standard way to access the service.
+     *
+     * @return The single instance of {@code SharedIDService}.
+     */
     public static SharedIDService getInstance() {
         return Holder.INSTANCE;
     }
@@ -267,6 +318,81 @@ public class SharedIDService {
     }
 
     // Method to check available size, useful for testing or monitoring
+    public int getAvailableCount() {
+        return idQueue.size(); // Reflects items in queue
+    }
+
+    // Method to check active size, useful for testing or monitoring
+    // public int getActiveCount() { // REMOVED
+    //     return 0; 
+    // }
+
+    // Method to get current nextLowerBoundForGeneration, useful for testing
+    // public long getNextLowerBoundForGeneration() { // To be replaced by nextSieveSegmentStart.get()
+    //     return nextLowerBoundForGeneration;
+    // }
+
+    // Method to check if initial generation is done (useful for testing)
+    // public boolean isInitialGenerationPerformed() { // REMOVED
+    //     return initialGenerationPerformed;
+    // }
+
+    /**
+     * Retrieves a new, unique prime ID from the pool of available IDs.
+     * This method will block if the queue of pre-generated IDs is empty, waiting for the
+     * background prime generation tasks to produce more IDs.
+     *
+     * @return A unique 10-digit prime number as a {@code long}.
+     * @throws InterruptedException If the calling thread is interrupted while waiting for an ID to become available.
+     */
+    public long getNew() throws InterruptedException { // Removed synchronized
+        // Remove old logic related to 'available' set, 'active' set, wait/notify, and replenishment checks.
+        // The new logic is much simpler:
+        try {
+            // LOGGER.info("Attempting to take ID from queue. Queue size: " + idQueue.size()); // Optional: for debugging
+            Long id = idQueue.take(); // Blocks if queue is empty
+            // LOGGER.info("ID " + id + " taken from queue. New queue size: " + idQueue.size()); // Optional: for debugging
+            
+            // The 'active' set was removed. If distinct tracking of active IDs is needed later,
+            // it would be managed here, e.g., by adding to a concurrent 'activeIDs' set.
+            // For now, no 'active' set management.
+
+            // Replenishment is no longer triggered here. It's handled by the background orchestrator
+            // monitoring idQueue.size() against QUEUE_LOW_WATER_MARK.
+            StatisticsService.getInstance().recordIdGenerated("SharedIDService");
+            return id;
+        } catch (InterruptedException e) {
+            LOGGER.log(Level.WARNING, "getNew() was interrupted while waiting to take ID from queue.", e);
+            Thread.currentThread().interrupt(); // Preserve interrupt status
+            // Depending on desired behavior, could re-throw a custom runtime exception or return a specific value.
+            // For now, re-throwing as InterruptedException is fine as per original signature.
+            throw e; 
+        }
+    }
+
+    /**
+     * Returns a previously used ID to the pool, making it potentially available for future reuse.
+     * The ID is offered to the internal queue. If the queue is full (which is unlikely if
+     * {@link #QUEUE_CAPACITY} is large and consumption is steady), the ID might be dropped.
+     * This method is non-blocking.
+     *
+     * @param id The prime ID to be returned.
+     */
+    public void delete(long id) { // Removed synchronized
+        boolean offered = idQueue.offer(id); // Non-blocking, adds if space allows
+        if (offered) {
+            LOGGER.fine("ID " + id + " returned to queue. Queue size: " + idQueue.size());
+        } else {
+            LOGGER.warning("Could not return ID " + id + " to queue (it might be full). ID is dropped.");
+        }
+    }
+
+    /**
+     * Gets the current number of IDs available in the internal queue.
+     * This can be used for monitoring or testing purposes.
+     *
+     * @return The number of IDs currently in the queue.
+     */
     public int getAvailableCount() {
         return idQueue.size(); // Reflects items in queue
     }

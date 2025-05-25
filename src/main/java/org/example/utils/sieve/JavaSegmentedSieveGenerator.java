@@ -4,6 +4,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Implements the {@link PrimeSegmentGenerator} interface using a segmented Sieve of Eratosthenes algorithm.
+ * This class is designed to efficiently find prime numbers within a specified numerical segment (range).
+ *
+ * <p><b>Algorithm Overview:</b></p>
+ * <ol>
+ *   <li><b>Base Primes Pre-computation:</b> A list of base primes up to a certain limit (square root of the maximum possible number in a segment, e.g., sqrt(10^10) for 10-digit numbers) is pre-calculated using a standard Sieve of Eratosthenes. This is done once when the class is loaded.
+ *   <li><b>Segment Sieving:</b> For a given segment [segmentStart, segmentStart + segmentSize - 1]:
+ *     <ul>
+ *       <li>A boolean array {@code isCompositeInSegment} of size {@code segmentSize} is created, initially marking all numbers in the segment as potentially prime (false).
+ *       <li>For each base prime {@code p} from the pre-computed list:
+ *         <ul>
+ *           <li>Calculate the first multiple of {@code p} that is greater than or equal to {@code segmentStart}.
+ *           <li>Mark all multiples of {@code p} within the segment as composite in the {@code isCompositeInSegment} array.
+ *         </ul>
+ *       </li>
+ *       <li>Iterate through the {@code isCompositeInSegment} array. If an entry {@code isCompositeInSegment[i]} is false, then the number {@code segmentStart + i} is prime.
+ *     </ul>
+ *   </li>
+ * </ol>
+ * This approach is memory-efficient for large ranges as it only requires a boolean array proportional to the segment size, rather than the entire upper bound.
+ */
 public class JavaSegmentedSieveGenerator implements PrimeSegmentGenerator {
 
     private static final int MAX_BASE_PRIME_LIMIT = 100_000; // Sqrt of 10^10 (max 10-digit number is 10^10 -1, sqrt is ~100,000)
@@ -31,6 +53,19 @@ public class JavaSegmentedSieveGenerator implements PrimeSegmentGenerator {
         return primes;
     }
 
+    /**
+     * Generates prime numbers within a specified segment [segmentStart, segmentStart + segmentSize - 1]
+     * and stores them in the provided {@code outPrimes} array.
+     *
+     * @param segmentStart The starting number (inclusive) of the segment to sieve. Must be non-negative.
+     * @param segmentSize The size of the segment. Must be positive.
+     * @param outPrimes An array where the found prime numbers will be stored. The array must be large enough
+     *                  to hold all primes found in the segment.
+     * @return The total number of prime numbers found and stored in {@code outPrimes}.
+     * @throws IllegalArgumentException if {@code segmentStart} is negative, {@code segmentSize} is not positive,
+     *                                  {@code outPrimes} is null, or if {@code outPrimes} is too small to hold
+     *                                  all the primes found in the segment.
+     */
     @Override
     public int generatePrimes(long segmentStart, int segmentSize, long[] outPrimes) {
         if (segmentStart < 0 || segmentSize <= 0 || outPrimes == null) {

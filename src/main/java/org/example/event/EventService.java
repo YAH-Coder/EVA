@@ -9,6 +9,12 @@ import java.util.HashMap; // Will be replaced by ConcurrentHashMap
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap; // Added import
 
+/**
+ * Service class for managing event-related operations.
+ * This class provides functionalities to add, retrieve, update, and delete events.
+ * It uses a ConcurrentHashMap for thread-safe storage of events and SharedIDService for generating unique IDs.
+ * This class is implemented as a singleton.
+ */
 public class EventService implements EventServiceInterface {
     private final ConcurrentHashMap<Long, Event> events; // Changed to ConcurrentHashMap
     // private final IDServiceParallel idService; // Removed
@@ -19,6 +25,11 @@ public class EventService implements EventServiceInterface {
         // this.idService = new IDServiceParallel(10000); // Removed
     }
 
+    /**
+     * Returns the singleton instance of EventService.
+     *
+     * @return The singleton EventService instance.
+     */
     public static EventService getInstance() { // Removed throws InterruptedException
         if(INSTANCE == null){
             // SharedIDService.getInstance().awaitInitialGeneration(); // REMOVED
@@ -47,7 +58,7 @@ public class EventService implements EventServiceInterface {
 
     @Override
     public void update(long id, String name, String location, LocalDateTime date, int nmbTickets) {
-        Event event = get(id);
+        Event event = get(id); // Ensures event exists or throws NoSuchElementException
         event.setName(name);
         event.setLocation(location);
         event.setDate(date);
@@ -56,23 +67,22 @@ public class EventService implements EventServiceInterface {
 
     @Override
     public void delete(long id) {
-        if (!events.containsKey(id)) {
+        Event existingEvent = events.remove(id); // Atomically removes and returns the event
+        if (existingEvent == null) {
             throw new NoSuchElementException("No event found with ID " + id);
         }
-        events.remove(id);
         SharedIDService.getInstance().delete(id); // Changed to SharedIDService
     }
 
     @Override
     public Event[] getAll() {
-        return events.values().toArray(new Event[events.size()]);
+        return events.values().toArray(new Event[0]); // More robust way for empty array
     }
 
     @Override
     public void deleteAll() {
-        for (Long id : events.keySet()) {
-            SharedIDService.getInstance().delete(id); // Changed to SharedIDService
-        }
+        // Iterate over keys to delete from SharedIDService before clearing the map
+        events.keySet().forEach(SharedIDService.getInstance()::delete); // Changed to SharedIDService
         events.clear();
     }
 }

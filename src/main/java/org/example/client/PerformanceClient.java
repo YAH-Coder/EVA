@@ -14,6 +14,10 @@ import java.util.concurrent.Executors;     // Added import
 import java.util.concurrent.ThreadFactory;  // Added import
 import java.util.concurrent.CountDownLatch; // Added import
 
+/**
+ * Client for performing load and performance tests on the TicketShop application.
+ * This client simulates multiple users creating events, customers, and buying tickets.
+ */
 public class PerformanceClient {
     private final EventServiceInterface eventService;
     private final CustomerServiceInterface customerService;
@@ -21,6 +25,12 @@ public class PerformanceClient {
     private final ExecutorService clientTaskExecutor; // Added field
     private final int numClientThreads;             // Added field
 
+    /**
+     * Constructs a new PerformanceClient.
+     * Initializes services and a thread pool for concurrent task execution.
+     *
+     * @param ticketShop The TicketShop instance to interact with.
+     */
     public PerformanceClient(TicketShop ticketShop) {
         this.eventService = ticketShop.getEventServiceInterface();
         this.customerService = ticketShop.getCustomerServiceInterface();
@@ -45,6 +55,14 @@ public class PerformanceClient {
         System.out.println("PerformanceClient initialized with " + this.numClientThreads + " worker threads.");
     }
 
+    /**
+     * Creates a specified number of events concurrently.
+     * Each event creation is submitted as a task to the client's thread pool.
+     *
+     * @param nmbOfEvents The number of events to create.
+     * @param nmbOfTickets The number of tickets available for each event.
+     * @throws InterruptedException If the current thread is interrupted while waiting for tasks to complete.
+     */
     public void createEvents(int nmbOfEvents, int nmbOfTickets) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         CountDownLatch latch = new CountDownLatch(nmbOfEvents);
@@ -79,6 +97,12 @@ public class PerformanceClient {
         System.out.println("Parallel creation of " + nmbOfEvents + " Events took " + (System.currentTimeMillis() - startTime) + "ms using " + this.numClientThreads + " threads.");
     }
 
+    /**
+     * Creates a specified number of customers sequentially.
+     *
+     * @param nmbOfCustomers The number of customers to create.
+     * @throws InterruptedException If the underlying customer service operation is interrupted.
+     */
     public void createCustomers(int nmbOfCustomers) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < nmbOfCustomers; i++) {
@@ -87,6 +111,13 @@ public class PerformanceClient {
         System.out.println("Creating " + nmbOfCustomers + " Customers took " + (System.currentTimeMillis() - startTime) + "ms");
     }
 
+    /**
+     * Simulates buying a specified number of tickets for every customer for every available event.
+     * This method iterates through all customers and all events, attempting to buy tickets.
+     *
+     * @param amount The number of tickets each customer attempts to buy per event.
+     * @throws InterruptedException If the underlying service operation is interrupted.
+     */
     public void buyTickets(int amount) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         for (Customer customer: customerService.getAll()) {

@@ -9,6 +9,12 @@ import java.util.HashMap; // Will be replaced by ConcurrentHashMap
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap; // Added import
 
+/**
+ * Service class for managing customer-related operations.
+ * This class provides functionalities to add, retrieve, update, and delete customers.
+ * It uses a ConcurrentHashMap for thread-safe storage of customers and SharedIDService for generating unique IDs.
+ * This class is implemented as a singleton.
+ */
 public class CustomerService implements CustomerServiceInterface {
     private final ConcurrentHashMap<Long, Customer> customers; // Changed to ConcurrentHashMap
     // private final IDServiceParallel idService; // Removed
@@ -21,6 +27,11 @@ public class CustomerService implements CustomerServiceInterface {
 
     // As per clarification, getInstance might not need it if constructor is clean
     // but add methods will. Let's keep it on getInstance for now as per "Simplification for worker".
+    /**
+     * Returns the singleton instance of CustomerService.
+     *
+     * @return The singleton CustomerService instance.
+     */
     public static CustomerService getInstance() { // Removed throws InterruptedException
         if (INSTANCE == null) {
             // SharedIDService.getInstance().awaitInitialGeneration(); // REMOVED
@@ -50,7 +61,7 @@ public class CustomerService implements CustomerServiceInterface {
 
     @Override
     public void update(long id, String name, String email, LocalDateTime birthday) {
-        Customer customer = get(id);
+        Customer customer = get(id); // Ensures customer exists or throws NoSuchElementException
         customer.setUsername(name);
         customer.setEmail(email);
         customer.setBirthday(birthday);
@@ -58,23 +69,24 @@ public class CustomerService implements CustomerServiceInterface {
 
     @Override
     public void delete(long id) {
-        if (!customers.containsKey(id)) {
+        Customer existingCustomer = customers.remove(id); // Atomically removes and returns the customer
+        if (existingCustomer == null) {
             throw new NoSuchElementException("No customer found with ID " + id);
         }
-        customers.remove(id);
         SharedIDService.getInstance().delete(id); // Changed to SharedIDService
     }
 
     @Override
     public Customer[] getAll() {
-        return customers.values().toArray(new Customer[customers.size()]);
+        return customers.values().toArray(new Customer[0]); // More robust way to get an empty array if needed
     }
 
     @Override
     public void deleteAll() {
-        for (Long id : customers.keySet()) {
-            SharedIDService.getInstance().delete(id); // Changed to SharedIDService
-        }
+        // It's generally safer to iterate over a copy of the keyset if modification occurs elsewhere,
+        // but here, clear() is called at the end, making it fine.
+        // However, for SharedIDService.delete, we need to ensure all IDs are processed before clear.
+        customers.keySet().forEach(SharedIDService.getInstance()::delete); // Changed to SharedIDService
         customers.clear();
     }
 }

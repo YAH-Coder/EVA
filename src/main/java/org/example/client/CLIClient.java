@@ -13,12 +13,21 @@ import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
+/**
+ * Command Line Interface (CLI) client for interacting with the TicketShop.
+ * Allows users to manage events, customers, and tickets through text-based commands.
+ */
 public class CLIClient {
     private final Scanner scanner;
     private final EventServiceInterface eventService;
     private final CustomerServiceInterface customerService;
     private final TicketServiceInterface ticketService;
 
+    /**
+     * Constructs a new CLIClient.
+     *
+     * @param ticketShop The TicketShop instance to interact with.
+     */
     public CLIClient(TicketShop ticketShop) {
         scanner = new Scanner(System.in);
         eventService = ticketShop.getEventServiceInterface();
@@ -299,6 +308,10 @@ public class CLIClient {
         }
     }
 
+    /**
+     * Starts the command line interface client.
+     * Displays a help message and then enters a loop to process user commands.
+     */
     public void start() {
         help();
         while (true) {

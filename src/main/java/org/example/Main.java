@@ -5,8 +5,19 @@ import org.example.client.PerformanceClient;
 import org.example.utils.StatisticsService;
 // import org.example.utils.SharedIDService; // Import might become unused
 
+/**
+ * Main class for the TicketShop application.
+ * This class initializes the application and runs performance tests.
+ */
 public class Main {
 
+    /**
+     * Main method to start the application.
+     * Initializes the TicketShop and runs performance tests.
+     *
+     * @param args Command line arguments (not used).
+     * @throws InterruptedException If any thread is interrupted.
+     */
     public static void main(String[] args) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         // IDServiceParallel idService = new IDServiceParallel(10000); // Removed
