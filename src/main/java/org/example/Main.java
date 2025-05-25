@@ -1,9 +1,7 @@
 package org.example;
 
-import org.example.client.CLIClient;
 import org.example.client.PerformanceClient;
 import org.example.utils.StatisticsService;
-// import org.example.utils.SharedIDService; // Import might become unused
 
 /**
  * Main class for the TicketShop application.
@@ -20,8 +18,7 @@ public class Main {
      */
     public static void main(String[] args) throws InterruptedException {
         long startTime = System.currentTimeMillis();
-        // IDServiceParallel idService = new IDServiceParallel(10000); // Removed
-        TicketShop ticketShop = new TicketShop(); // Changed constructor
+        TicketShop ticketShop = new TicketShop();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("-----------------------------------");
@@ -30,11 +27,6 @@ public class Main {
             System.out.println("-----------------------------------");
         }));
 
-        // The call to awaitInitialGeneration() is removed from here.
-        // It's now handled by the service classes themselves.
-
-//        CLIClient CLIClient = new CLIClient(ticketShop);
-//        CLIClient.start();
         PerformanceClient performanceClient = new PerformanceClient(ticketShop);
         performanceClient.createEvents(100, 1000);
         performanceClient.createCustomers(1000);

@@ -5,12 +5,10 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.util.Collections;
 import java.util.HashSet;
-// import java.util.NoSuchElementException; // Removed as it's no longer expected from delete()
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch; // Keep for testGetNew_ConcurrentRequests_AllUnique
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.Disabled; // Added import for @Disabled
+import org.junit.jupiter.api.Disabled;
 
 // TODO: Refactor tests for segmented sieve ID generation and BlockingQueue model.
 // This test class is currently disabled due to mismatches with the heavily refactored SharedIDService
@@ -27,8 +25,7 @@ import org.junit.jupiter.api.Disabled; // Added import for @Disabled
 public class SharedIDServiceTest {
 
     private static SharedIDService service;
-    private static final long LOWER_BOUND = 1_000_000_000L; // As defined in SharedIDService
-    // Test-local constants like INITIAL_PRE_GENERATE_COUNT are removed.
+    private static final long LOWER_BOUND = 1_000_000_000L;
 
     @BeforeAll
     static void setUp() {
@@ -38,18 +35,16 @@ public class SharedIDServiceTest {
             System.out.println("SharedIDServiceTest @BeforeAll: Waiting for some initial primes in queue...");
             long startTime = System.currentTimeMillis();
             int attempts = 0;
-            // Wait for at least a small number of primes, e.g. 100, or up to 15 seconds
-            // Using SharedIDService public constants. Target is min(100, half of low water mark).
             int targetPrimeCount = Math.min(100, SharedIDService.QUEUE_LOW_WATER_MARK / 2);
-            if (targetPrimeCount <= 0) targetPrimeCount = 10; // Ensure target is positive if low water mark is very small
+            if (targetPrimeCount <= 0) targetPrimeCount = 10;
 
-            while (service.getAvailableCount() < targetPrimeCount && attempts < 300) { // 300 * 50ms = 15 seconds timeout
+            while (service.getAvailableCount() < targetPrimeCount && attempts < 300) {
                 Thread.sleep(50); 
                 attempts++;
             }
             long endTime = System.currentTimeMillis();
             System.out.println("SharedIDServiceTest @BeforeAll: Initial primes available (count: " + service.getAvailableCount() + "). Took " + (endTime - startTime) + "ms.");
-            if (service.getAvailableCount() < targetPrimeCount) { // Check if loop timed out
+            if (service.getAvailableCount() < targetPrimeCount) {
                  System.err.println("Warning: Initial prime generation in @BeforeAll might be very slow or stalled. Current count: " + service.getAvailableCount() + ", Target: " + targetPrimeCount);
             }
         } catch (InterruptedException e) {
@@ -66,8 +61,7 @@ public class SharedIDServiceTest {
     }
 
     @Test
-    void testCanRetrievePrimes() throws InterruptedException { // Renamed
-        // @BeforeAll setUp ensures some primes are likely available.
+    void testCanRetrievePrimes() throws InterruptedException {
         long id1 = service.getNew();
         assertTrue(id1 >= LOWER_BOUND, "Generated ID should be greater than or equal to LOWER_BOUND.");
         
@@ -77,17 +71,16 @@ public class SharedIDServiceTest {
     }
 
     @Test
-    @Timeout(value = 120, unit = TimeUnit.SECONDS) // Increased timeout for potentially large request
+    @Timeout(value = 120, unit = TimeUnit.SECONDS)
     void testGetNew_ProvidesUniqueIDs() throws InterruptedException {
         Set<Long> ids = new HashSet<>();
-        // Request enough IDs to potentially stress replenishment, using public constants from SharedIDService
-        int idsToRequest = SharedIDService.QUEUE_CAPACITY * 2; // Request twice the queue capacity
+        int idsToRequest = SharedIDService.QUEUE_CAPACITY * 2;
         
         System.out.println("testGetNew_ProvidesUniqueIDs: Requesting " + idsToRequest + " IDs. Initial queue size: " + service.getAvailableCount());
         for (int i = 0; i < idsToRequest; i++) {
             long id = service.getNew();
             assertTrue(ids.add(id), "Failed to add ID " + id + ", it's a duplicate. Iteration: " + i + ", Set size: " + ids.size());
-            if ((i + 1) % (SharedIDService.QUEUE_CAPACITY / 4) == 0) { // Log progress
+            if ((i + 1) % (SharedIDService.QUEUE_CAPACITY / 4) == 0) {
                 System.out.println("testGetNew_ProvidesUniqueIDs: Retrieved " + (i+1) + "/" + idsToRequest + " IDs. Current queue size: " + service.getAvailableCount());
             }
         }
@@ -96,13 +89,11 @@ public class SharedIDServiceTest {
     }
 
     @Test
-    void testDeleteOperation() throws InterruptedException { // Renamed
-        // Get an ID to ensure the queue isn't empty if test runs in isolation after a very slow setUp
+    void testDeleteOperation() throws InterruptedException {
         long idToTest;
         if (service.getAvailableCount() > 0) {
             idToTest = service.getNew();
         } else {
-            // Try to wait a little longer if setUp didn't provide enough
             int attempts = 0;
             while(service.getAvailableCount() == 0 && attempts < 100) { Thread.sleep(50); attempts++; }
             if(service.getAvailableCount() == 0) fail("Could not get an ID to test delete operation.");
@@ -112,24 +103,17 @@ public class SharedIDServiceTest {
         int countBeforeDelete = service.getAvailableCount();
         service.delete(idToTest); 
         
-        // With a blocking queue and offer, the size might not change if queue is full.
-        // A simple assertion is that delete does not error and the ID is eventually re-queued or dropped (if full).
-        // For this test, mainly check that delete doesn't throw.
-        // A more complex test would be needed to verify re-queuing under specific conditions.
-        // For now, we accept that it might be dropped if queue is full.
         assertTrue(service.getAvailableCount() >= countBeforeDelete || service.getAvailableCount() == SharedIDService.QUEUE_CAPACITY,
                    "After deleting an ID, available count should generally increase or stay same (if queue was full).");
 
-        // Test deleting a non-existent ID (should not error)
-        service.delete(-1L); // Should not throw an exception.
+        service.delete(-1L);
     }
 
-    // Using RepeatedTest to run concurrency test multiple times for better confidence
     @RepeatedTest(3)
-    @Timeout(value = 120, unit = TimeUnit.SECONDS) // Increased timeout for potentially heavy load
+    @Timeout(value = 120, unit = TimeUnit.SECONDS)
     void testGetNew_ConcurrentRequests_AllUnique() throws InterruptedException {
         int numThreads = 20; 
-        int idsPerThread = SharedIDService.QUEUE_CAPACITY / numThreads + 50; // Ensure each thread requests a decent number
+        int idsPerThread = SharedIDService.QUEUE_CAPACITY / numThreads + 50;
         if (idsPerThread == 0) idsPerThread = 50;
 
         int totalIdsToGenerate = numThreads * idsPerThread;
@@ -139,8 +123,7 @@ public class SharedIDServiceTest {
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
         CountDownLatch doneSignal = new CountDownLatch(numThreads); 
 
-        // Warm-up check (logging only)
-        if (service.getAvailableCount() < idsPerThread) { // Check against idsPerThread
+        if (service.getAvailableCount() < idsPerThread) {
              System.err.println("Warning (testGetNew_ConcurrentRequests_AllUnique): Initial queue size (" + service.getAvailableCount() + ") is less than idsPerThread ("+idsPerThread+"). Generation will be highly concurrent.");
         }
 
@@ -152,7 +135,6 @@ public class SharedIDServiceTest {
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    // Log error, but let test proceed to see if set size matches
                     System.err.println("Thread interrupted while getting new ID: " + e.getMessage());
                 } finally {
                     doneSignal.countDown();

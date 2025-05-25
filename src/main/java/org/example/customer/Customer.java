@@ -56,7 +56,7 @@ public class Customer {
      * @param ticketId The ID of the ticket to add.
      * @throws RuntimeException if the customer tries to purchase more than 5 tickets for the event.
      */
-    public synchronized void addTicket(long eventId, long ticketId) { // Added synchronized
+    public synchronized void addTicket(long eventId, long ticketId) {
         if (tickets.containsKey(eventId)) {
             if (tickets.get(eventId).size() < 5) {
                 tickets.get(eventId).add(ticketId);
@@ -64,7 +64,6 @@ public class Customer {
                 throw new RuntimeException("Can't purchase more than 5 tickets for a single event");
             }
         } else {
-            // If the eventId is not in the map, create a new HashSet for it
             HashSet<Long> newTicketSet = new HashSet<>();
             newTicketSet.add(ticketId);
             tickets.put(eventId, newTicketSet);
@@ -79,7 +78,7 @@ public class Customer {
      * @param ticketId The ID of the ticket to remove.
      * @throws RuntimeException if the event with the given ID is not found in the customer's tickets.
      */
-    public synchronized void removeTicket(long eventId, long ticketId) { // Renamed and added synchronized
+    public synchronized void removeTicket(long eventId, long ticketId) {
         if (tickets.containsKey(eventId)) {
             tickets.get(eventId).remove(ticketId);
         } else {

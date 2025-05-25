@@ -1,7 +1,7 @@
 package org.example.event;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.atomic.AtomicInteger; // Added import
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Represents an event in the ticket shop system.
@@ -13,7 +13,7 @@ public class Event {
     private String name;
     private String location;
     private LocalDateTime date;
-    private AtomicInteger nmbTickets; // Changed to AtomicInteger
+    private AtomicInteger nmbTickets;
 
     /**
      * Constructs a new Event instance.
@@ -36,7 +36,7 @@ public class Event {
         if (nmbTickets < 0) {
             throw new IllegalArgumentException("Number of tickets cannot be negative");
         }
-        this.nmbTickets = new AtomicInteger(nmbTickets); // Changed to AtomicInteger
+        this.nmbTickets = new AtomicInteger(nmbTickets);
     }
 
     /**
@@ -45,7 +45,7 @@ public class Event {
      * @param other The Event object to copy.
      */
     public Event(Event other) {
-        this(other.id, other.name, other.location, other.date, other.nmbTickets.get()); // Use .get() for AtomicInteger
+        this(other.id, other.name, other.location, other.date, other.nmbTickets.get());
     }
 
     /**
@@ -133,7 +133,7 @@ public class Event {
      * @return The number of available tickets.
      */
     public int getNmbTickets() {
-        return nmbTickets.get(); // Use .get() for AtomicInteger
+        return nmbTickets.get();
     }
 
     /**
@@ -147,7 +147,7 @@ public class Event {
         if (nmbTickets < 0) {
             throw new IllegalArgumentException("Number of tickets cannot be negative");
         }
-        this.nmbTickets.set(nmbTickets); // Use .set() for AtomicInteger
+        this.nmbTickets.set(nmbTickets);
     }
 
     /**
@@ -163,9 +163,8 @@ public class Event {
                 throw new RuntimeException("Can't decrease amount of tickets below 0");
             }
             if (nmbTickets.compareAndSet(current, current - 1)) {
-                break; // Successfully decremented
+                break;
             }
-            // If CAS failed, loop again (another thread modified nmbTickets)
         }
     }
 
@@ -173,14 +172,14 @@ public class Event {
      * Atomically increases the number of available tickets by one.
      */
     public void increaseNmbTickets() {
-        this.nmbTickets.incrementAndGet(); // Use atomic operation
+        this.nmbTickets.incrementAndGet();
     }
 
     @Override
     public String toString() {
         return String.format(
                 "Id: %d%nName: %s%nLocation: %s%nDate: %s%nNumber of Tickets: %d",
-                id, name, location, date, nmbTickets.get() // Use .get() for AtomicInteger
+                id, name, location, date, nmbTickets.get()
         );
     }
 }

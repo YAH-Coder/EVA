@@ -25,27 +25,14 @@ public class TicketShopBlackboxTests {
 
     @BeforeEach
     void setUp() throws InterruptedException {
-        // It's important to reset statistics if they are used or affect behavior,
-        // or if previous test runs could leave state.
-        // org.example.utils.StatisticsService.getInstance().reset(); // Optional, if stats affect logic or are asserted
-
-        // Re-instantiate TicketShop or reset its state if possible.
-        // Given the singleton nature of services, true reset is hard.
-        // deleteAll in AfterEach is the primary mechanism for isolation.
         ticketShop = new TicketShop();
     }
 
     @AfterEach
     void tearDown() {
-        // Order might matter if there are foreign key-like dependencies,
-        // e.g., tickets depend on customers and events.
-        // Delete tickets first, then customers and events.
         ticketShop.getTicketServiceInterface().deleteAll();
         ticketShop.getEventServiceInterface().deleteAll();
         ticketShop.getCustomerServiceInterface().deleteAll();
-        // Potentially reset SharedIDService if its state affects subsequent tests,
-        // though for black-box testing, we try to avoid such deep interactions.
-        // The current deleteAll methods do return IDs to SharedIDService.
     }
 
     // --- Event Management Tests ---
@@ -103,7 +90,7 @@ public class TicketShopBlackboxTests {
 
     @Test
     void testGetNonExistentEvent() {
-        long nonExistentId = 999999999L; // Assuming this ID won't exist
+        long nonExistentId = 999999999L;
         assertThrows(NoSuchElementException.class, () -> {
             ticketShop.getEventServiceInterface().get(nonExistentId);
         });
@@ -215,12 +202,7 @@ public class TicketShopBlackboxTests {
         Event eventAfterPurchase = ticketShop.getEventServiceInterface().get(event.getId());
         assertEquals(initialEventTickets - 1, eventAfterPurchase.getNmbTickets());
 
-        // Verify customer has the ticket (Customer class needs a way to check this, e.g., getTickets())
-        // For black-box, we might not be able to directly inspect Customer's internal ticket list easily
-        // without modifying Customer or CustomerService.
-        // We can, however, check if the ticket exists via TicketService.get(ticket.getId()).
         assertNotNull(ticketShop.getTicketServiceInterface().get(ticket.getId()));
-        // And also using the checkTicket method
         assertTrue(ticketShop.getTicketServiceInterface().checkTicket(ticket.getId(), event.getId(), customer.getId()));
 
     }
@@ -255,7 +237,7 @@ public class TicketShopBlackboxTests {
         ticketShop.getTicketServiceInterface().add(LocalDateTime.now(), customer1.getId(), event.getId());
 
         // Second customer attempts to buy a ticket
-        assertThrows(RuntimeException.class, () -> { // Assuming Event.decreaseNmbTickets throws RuntimeException for 0 tickets
+        assertThrows(RuntimeException.class, () -> {
             ticketShop.getTicketServiceInterface().add(LocalDateTime.now(), customer2.getId(), event.getId());
         }, "Expected an exception when buying ticket for sold-out event");
     }
@@ -276,9 +258,8 @@ public class TicketShopBlackboxTests {
         });
 
         Event eventAfterDeletion = ticketShop.getEventServiceInterface().get(event.getId());
-        assertEquals(initialEventTickets, eventAfterDeletion.getNmbTickets()); // Ticket number should be restored
+        assertEquals(initialEventTickets, eventAfterDeletion.getNmbTickets());
 
-        // Verify ticket is no longer associated with customer using checkTicket
         assertFalse(ticketShop.getTicketServiceInterface().checkTicket(ticketId, event.getId(), customer.getId()));
     }
 
@@ -292,10 +273,10 @@ public class TicketShopBlackboxTests {
 
     // --- Basic Concurrency Test ---
     @Test
-    @Timeout(value = 20, unit = TimeUnit.SECONDS) // Timeout to prevent test hanging indefinitely
+    @Timeout(value = 20, unit = TimeUnit.SECONDS)
     void testConcurrentTicketPurchases() throws InterruptedException {
         int initialTickets = 100;
-        int numCustomers = 20; // Should be <= initialTickets for this test variant
+        int numCustomers = 20;
         Event event = ticketShop.getEventServiceInterface().add("Popular Concert", "Stadium", LocalDateTime.now().plusDays(60), initialTickets);
         
         List<Customer> customers = new ArrayList<>();
@@ -313,7 +294,6 @@ public class TicketShopBlackboxTests {
                     ticketShop.getTicketServiceInterface().add(LocalDateTime.now(), customer.getId(), event.getId());
                     successfulPurchases.incrementAndGet();
                 } catch (Exception e) {
-                    // Catching general exception as different issues might arise (sold out, other runtime)
                     System.err.println("Concurrent purchase failed for customer " + customer.getId() + ": " + e.getMessage());
                     failedPurchases.incrementAndGet();
                 }
@@ -328,7 +308,6 @@ public class TicketShopBlackboxTests {
         assertEquals(numCustomers, successfulPurchases.get() + failedPurchases.get(), "Total attempts should match number of customers.");
         assertTrue(successfulPurchases.get() <= initialTickets, "More tickets sold than available.");
 
-        // Verify total tickets in the system for this event
         Ticket[] allTickets = ticketShop.getTicketServiceInterface().getAll();
         long ticketsForThisEvent = 0;
         for(Ticket t : allTickets) {

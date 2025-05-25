@@ -1,15 +1,13 @@
 package org.example.ticket;
 
-// import org.example.utils.IDService; // Unused
 import org.example.customer.CustomerService;
 import org.example.event.EventService;
-import org.example.utils.SharedIDService; // Added import
+import org.example.utils.SharedIDService;
 import org.example.utils.StatisticsService;
 
 import java.time.LocalDateTime;
-import java.util.HashMap; // Will be replaced by ConcurrentHashMap
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentHashMap; // Added import
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service class for managing ticket-related operations.
@@ -19,17 +17,14 @@ import java.util.concurrent.ConcurrentHashMap; // Added import
  * This class is implemented as a singleton.
  */
 public class TicketService implements TicketServiceInterface {
-    private final ConcurrentHashMap<Long, Ticket> tickets; // Changed to ConcurrentHashMap
-    // private static final IDServiceParallel idService; // Removed
-
-    // Static initializer block removed
+    private final ConcurrentHashMap<Long, Ticket> tickets;
 
     private final CustomerService customerService = CustomerService.getInstance();
     private final EventService eventService = EventService.getInstance();
     private static TicketService INSTANCE;
 
-    private TicketService() { // Removed throws InterruptedException
-        this.tickets = new ConcurrentHashMap<>(); // Changed to ConcurrentHashMap
+    private TicketService() {
+        this.tickets = new ConcurrentHashMap<>();
     }
 
     /**
@@ -37,11 +32,8 @@ public class TicketService implements TicketServiceInterface {
      *
      * @return The singleton TicketService instance.
      */
-    public static TicketService getInstance() { // Removed throws InterruptedException
+    public static TicketService getInstance() {
         if (INSTANCE == null) {
-            // Ensure initial ID generation is complete before creating TicketService instance.
-            // The constructor of TicketService calls getInstance() on CustomerService and EventService.
-            // SharedIDService.getInstance().awaitInitialGeneration(); // REMOVED
             INSTANCE = new TicketService(); 
         }
         return INSTANCE;
@@ -49,7 +41,7 @@ public class TicketService implements TicketServiceInterface {
 
     @Override
     public Ticket add(LocalDateTime purchaseDate, Long customerId, Long eventId) throws InterruptedException {
-        long id = SharedIDService.getInstance().getNew(); // Changed to SharedIDService
+        long id = SharedIDService.getInstance().getNew();
         // Validations for customerId and eventId existence are implicitly handled by their respective services
         // when ticket constructor calls eventService.get(eventId) and customerService.get(customerId)
         // Further, event.decreaseNmbTickets() and customer.addTicket() will also ensure they exist.
@@ -72,18 +64,18 @@ public class TicketService implements TicketServiceInterface {
 
     @Override
     public void delete(long id) {
-        Ticket ticket = tickets.remove(id); // Atomically removes and returns the ticket
+        Ticket ticket = tickets.remove(id);
         if (ticket == null) {
             throw new NoSuchElementException("No ticket found with ID " + id + " to delete.");
         }
-        SharedIDService.getInstance().delete(id); // Changed to SharedIDService
+        SharedIDService.getInstance().delete(id);
         eventService.get(ticket.getEventId()).increaseNmbTickets();
-        customerService.get(ticket.getCustomerId()).removeTicket(ticket.getEventId(), id); // Corrected typo: remooveTicket -> removeTicket
+        customerService.get(ticket.getCustomerId()).removeTicket(ticket.getEventId(), id);
     }
 
     @Override
     public Ticket[] getAll() {
-        return tickets.values().toArray(new Ticket[0]); // More robust for empty map
+        return tickets.values().toArray(new Ticket[0]);
     }
 
     @Override
@@ -105,7 +97,7 @@ public class TicketService implements TicketServiceInterface {
      * @return {@code true} if the ticket exists, belongs to the specified customer, and is for the specified event; {@code false} otherwise.
      */
     public Boolean checkTicket(Long ticketId, Long eventId, Long customerId) {
-        Ticket ticket = tickets.get(ticketId); // Returns null if ticketId is not found
+        Ticket ticket = tickets.get(ticketId);
         if (ticket != null) {
             return customerId.equals(ticket.getCustomerId()) && eventId.equals(ticket.getEventId());
         }

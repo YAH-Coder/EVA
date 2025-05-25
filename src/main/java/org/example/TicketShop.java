@@ -6,7 +6,6 @@ import org.example.event.EventService;
 import org.example.event.EventServiceInterface;
 import org.example.ticket.TicketService;
 import org.example.ticket.TicketServiceInterface;
-// import org.example.utils.IDServiceParallel; // Removed
 
 /**
  * Represents the main entry point for interacting with the ticket shop services.
@@ -23,7 +22,7 @@ public class TicketShop {
      *
      * @throws InterruptedException if the initialization of services is interrupted.
      */
-    public TicketShop() throws InterruptedException { // Changed constructor signature
+    public TicketShop() throws InterruptedException {
         this.customerServiceInterface = CustomerService.getInstance();
         this.eventServiceInterface = EventService.getInstance();
         this.ticketServiceInterface = TicketService.getInstance();

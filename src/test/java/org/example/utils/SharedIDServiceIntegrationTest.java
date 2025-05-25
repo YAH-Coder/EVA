@@ -13,13 +13,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import java.math.BigInteger; // Added for BigInteger
-import org.junit.jupiter.api.MethodOrderer; // Added for @Order
-import org.junit.jupiter.api.Order; // Added for @Order
+import java.math.BigInteger;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.BeforeEach; // Added for @BeforeEach
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * Integration tests for the {@link SharedIDService}.
@@ -34,36 +32,33 @@ import org.junit.jupiter.api.BeforeEach; // Added for @BeforeEach
 class SharedIDServiceIntegrationTest {
 
     private static final Logger LOGGER = Logger.getLogger(SharedIDServiceIntegrationTest.class.getName());
-    private static final long MIN_ID_VALUE = 1_000_000_000L; // Lower bound for generated IDs
+    private static final long MIN_ID_VALUE = 1_000_000_000L;
 
     private SharedIDService idService;
 
     @BeforeEach
     void setUp() {
-        // Obtain the singleton instance before each test
         idService = SharedIDService.getInstance();
     }
 
     @Test
-    @Order(2) // Run after deterministicSamplingTest, but before heavier tests.
+    @Order(2)
     void testSingletonInstance() {
-        SharedIDService instance1 = SharedIDService.getInstance(); // First call in this test
-        SharedIDService instance2 = SharedIDService.getInstance(); // Second call
-        // idService is already initialized via @BeforeEach
+        SharedIDService instance1 = SharedIDService.getInstance();
+        SharedIDService instance2 = SharedIDService.getInstance();
         assertSame(idService, instance1, "First call to getInstance() should return the same instance as from setUp.");
         assertSame(instance1, instance2, "Consecutive calls to getInstance() should return the same instance.");
     }
 
     @Test
-    @Order(3) // Runs after deterministic and singleton check.
+    @Order(3)
     void testGetNew_returnsUniquePrimeIDs_quickCheck() throws InterruptedException {
         Set<Long> retrievedIDs = new HashSet<>();
         int idsToRetrieve = 10;
         String testContext = "testGetNew_returnsUniquePrimeIDs_quickCheck";
 
-        // Wait for the queue to have some elements
         int attempts = 0;
-        final int maxAttempts = 20; // Max 10 seconds wait
+        final int maxAttempts = 20;
         while (idService.getAvailableCount() < idsToRetrieve && attempts < maxAttempts) {
             LOGGER.info(String.format("[%s] Waiting for IDs. Available: %d, Needed: %d, Attempt: %d/%d",
                     testContext, idService.getAvailableCount(), idsToRetrieve, attempts + 1, maxAttempts));
@@ -95,7 +90,7 @@ class SharedIDServiceIntegrationTest {
     }
 
     @Test
-    @Order(4) // Runs after the quicker checks.
+    @Order(4)
     void smokeTestSingleThreadedUniquenessAndPrimality() throws InterruptedException {
         List<Long> retrievedIdsList = new ArrayList<>();
         Set<Long> uniqueIdsSet = new HashSet<>();
@@ -103,7 +98,7 @@ class SharedIDServiceIntegrationTest {
         String testContext = "smokeTestSingleThreadedUniquenessAndPrimality";
 
         int attempts = 0;
-        final int maxAttempts = 60; // Max 30 seconds wait
+        final int maxAttempts = 60;
         while (idService.getAvailableCount() < numIdsToGenerate && attempts < maxAttempts) {
             LOGGER.info(String.format("[%s] Waiting for IDs. Available: %d, Needed: %d, Attempt: %d/%d",
                     testContext, idService.getAvailableCount(), numIdsToGenerate, attempts + 1, maxAttempts));
@@ -126,8 +121,8 @@ class SharedIDServiceIntegrationTest {
             () -> {
                 for (int i = 0; i < retrievedIdsList.size(); i++) {
                     long id = retrievedIdsList.get(i);
-                    final int finalI = i; // for lambda
-                    final long finalId = id; // for lambda
+                    final int finalI = i;
+                    final long finalId = id;
                     assertAll(String.format("ID %d (value: %d) checks", finalI + 1, finalId),
                         () -> assertTrue(finalId >= MIN_ID_VALUE, String.format("[%s] ID %d (value: %d) must be >= %d.", testContext, finalI + 1, finalId, MIN_ID_VALUE)),
                         () -> assertTrue(BigInteger.valueOf(finalId).isProbablePrime(10), String.format("[%s] ID %d (value: %d) must be a probable prime.", testContext, finalI + 1, finalId))
@@ -146,7 +141,7 @@ class SharedIDServiceIntegrationTest {
     }
 
     @Test
-    @Order(5) // Runs after single-threaded tests.
+    @Order(5)
     void concurrencyTestMultiThreadedSafety() throws InterruptedException {
         final int NUM_THREADS = 4;
         final int IDS_PER_THREAD = 500;
@@ -157,7 +152,7 @@ class SharedIDServiceIntegrationTest {
         ExecutorService executorService = Executors.newFixedThreadPool(NUM_THREADS);
 
         int attempts = 0;
-        final int maxAttempts = 120; // Max 60 seconds wait
+        final int maxAttempts = 120;
         while (idService.getAvailableCount() < TOTAL_IDS_EXPECTED && attempts < maxAttempts) {
             LOGGER.info(String.format("[%s] Waiting for IDs. Available: %d, Needed: %d, Attempt: %d/%d",
                     testContext, idService.getAvailableCount(), TOTAL_IDS_EXPECTED, attempts + 1, maxAttempts));
@@ -212,8 +207,8 @@ class SharedIDServiceIntegrationTest {
             () -> {
                 for (int i = 0; i < collectedIds.size(); i++) {
                     long id = collectedIds.get(i);
-                    final int finalI = i; // for lambda
-                    final long finalId = id; // for lambda
+                    final int finalI = i;
+                    final long finalId = id;
                     assertAll(String.format("ID %d (value: %d) checks", finalI + 1, finalId),
                          () -> assertTrue(finalId >= MIN_ID_VALUE, String.format("[%s] ID %d (value: %d) must be >= %d.", testContext, finalI + 1, finalId, MIN_ID_VALUE)),
                          () -> assertTrue(BigInteger.valueOf(finalId).isProbablePrime(10), String.format("[%s] ID %d (value: %d) must be a probable prime.", testContext, finalI + 1, finalId))
@@ -226,7 +221,7 @@ class SharedIDServiceIntegrationTest {
     }
 
     @Test
-    @Order(6) // Runs after concurrency tests.
+    @Order(6)
     void blockingBehaviorEdgeCaseTest() throws InterruptedException {
         final long MAX_ACCEPTABLE_BLOCK_TIME_MS = 100L;
         final long MAX_ACCEPTABLE_BLOCK_TIME_NS = TimeUnit.MILLISECONDS.toNanos(MAX_ACCEPTABLE_BLOCK_TIME_MS);
@@ -237,7 +232,7 @@ class SharedIDServiceIntegrationTest {
                 testContext, idsToConsume, MAX_ACCEPTABLE_BLOCK_TIME_MS));
 
         int initialWaitAttempts = 0;
-        final int maxInitialWaitAttempts = 60; // Max 30s wait
+        final int maxInitialWaitAttempts = 60;
         final int targetInitialQueueSize = SharedIDService.QUEUE_CAPACITY / 2;
         while (idService.getAvailableCount() < targetInitialQueueSize && initialWaitAttempts < maxInitialWaitAttempts) {
             LOGGER.info(String.format("[%s] Initial wait for IDs. Available: %d, Target: %d, Attempt: %d/%d",
@@ -292,7 +287,7 @@ class SharedIDServiceIntegrationTest {
     }
 
     @Test
-    @Order(1) // Run this test absolutely first.
+    @Order(1)
     void deterministicSamplingTest() throws InterruptedException {
         String testContext = "deterministicSamplingTest";
         // This test's success is sensitive to the execution order due to SharedIDService being a singleton
@@ -309,7 +304,7 @@ class SharedIDServiceIntegrationTest {
         int idsToRetrieve = 10;
 
         int attempts = 0;
-        final int maxAttempts = 60; // Max 30 seconds wait
+        final int maxAttempts = 60;
         while (idService.getAvailableCount() < idsToRetrieve && attempts < maxAttempts) {
             LOGGER.info(String.format("[%s] Waiting for initial %d IDs. Available: %d, Attempt: %d/%d",
                     testContext, idsToRetrieve, idService.getAvailableCount(), attempts + 1, maxAttempts));
