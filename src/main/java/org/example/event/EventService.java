@@ -3,16 +3,19 @@ package org.example.event;
 import org.example.utils.IDService;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class EventService implements EventServiceInterface {
-    private final HashMap<Long, Event> events;
+    private final ConcurrentHashMap<Long, Event> events;
     private final IDService idService;
     private static EventService INSTANCE;
 
     private EventService() {
-        this.events = new HashMap<>();
+        this.events = new ConcurrentHashMap<>();
         this.idService = new IDService();
     }
 
@@ -59,8 +62,10 @@ public class EventService implements EventServiceInterface {
     }
 
     @Override
-    public Event[] getAll() {
-        return events.values().toArray(new Event[events.size()]);
+    public List<Event> getAll() {
+        synchronized (events) {
+            return new ArrayList<>(events.values());
+        }
     }
 
     @Override

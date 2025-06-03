@@ -9,6 +9,7 @@ import org.example.ticket.Ticket;
 import org.example.ticket.TicketServiceInterface;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -235,14 +236,14 @@ public class CLIClient {
     }
 
     private void showEvents() {
-        Event[] events = eventService.getAll();
+        List<Event> events = eventService.getAll();
         for (Event event : events) {
             System.out.println(event);
         }
     }
 
     private void showCustomers() {
-        Customer[] customers = customerService.getAll();
+        List<Customer> customers = customerService.getAll();
         for (Customer customer : customers) {
             System.out.println(customer);
         }

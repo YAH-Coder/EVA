@@ -3,16 +3,19 @@ package org.example.customer;
 import org.example.utils.IDService;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CustomerService implements CustomerServiceInterface {
-    private final HashMap<Long, Customer> customers;
+    private final ConcurrentHashMap<Long, Customer> customers;
     private final IDService idService;
     private static CustomerService INSTANCE;
 
     private CustomerService() {
-        this.customers = new HashMap<>();
+        this.customers = new ConcurrentHashMap<>();
         this.idService = new IDService();
     }
 
@@ -50,7 +53,7 @@ public class CustomerService implements CustomerServiceInterface {
     }
 
     @Override
-    public void delete(long id) {
+    public synchronized void delete(long id) {
         if (!customers.containsKey(id)) {
             throw new NoSuchElementException("No customer found with ID " + id);
         }
@@ -59,8 +62,8 @@ public class CustomerService implements CustomerServiceInterface {
     }
 
     @Override
-    public Customer[] getAll() {
-        return customers.values().toArray(new Customer[customers.size()]);
+    public List<Customer> getAll() {
+        return new ArrayList<>(customers.values());
     }
 
     @Override

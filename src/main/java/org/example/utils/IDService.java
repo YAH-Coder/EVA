@@ -3,20 +3,21 @@ package org.example.utils;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class IDService {
     private final Set<Long> ids;
-    private final PrimeNumberGenerator generator;
+    private final WheelEulerPrimeIterator iterator;
 
     public IDService() {
-        this.ids = new HashSet<>();
-        this.generator = new PrimeNumberGenerator(1_000_000_000L);
+        this.ids = ConcurrentHashMap.newKeySet();
+        this.iterator = new WheelEulerPrimeIterator();
     }
 
     public long getNew() {
         long prime;
         do {
-            prime = generator.nextPrime();
+            prime = iterator.next();
         } while (ids.contains(prime));
         ids.add(prime);
         return prime;

@@ -1,13 +1,14 @@
 package org.example.event;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Event {
     private final long id;
     private String name;
     private String location;
     private LocalDateTime date;
-    private int nmbTickets;
+    private AtomicInteger nmbTickets;
 
     public Event(long id, String name, String location, LocalDateTime date, int nmbTickets) {
         this.id = id;
@@ -20,11 +21,11 @@ public class Event {
         if (nmbTickets < 0) {
             throw new IllegalArgumentException("Number of tickets cannot be negative");
         }
-        this.nmbTickets = nmbTickets;
+        this.nmbTickets = new AtomicInteger(nmbTickets);
     }
 
     public Event(Event other) {
-        this(other.id, other.name, other.location, other.date, other.nmbTickets);
+        this(other.id, other.name, other.location, other.date, other.getNmbTickets());
     }
 
     public long getId() {
@@ -68,32 +69,43 @@ public class Event {
     }
 
     public int getNmbTickets() {
-        return nmbTickets;
+        return nmbTickets.get();
     }
 
     public void setNmbTickets(int nmbTickets) {
         if (nmbTickets < 0) {
             throw new IllegalArgumentException("Number of tickets cannot be negative");
         }
-        this.nmbTickets = nmbTickets;
+        this.nmbTickets.set(nmbTickets);
     }
 
-    public void decreaseNmbTickets() {
-        if (nmbTickets == 0) {
-            throw new RuntimeException("Can't decrease amount of tickets below 0");
+    /**
+     * Attempts to decrease the number of tickets.
+     * @return true if successful, false if no tickets are available
+     */
+    public boolean decreaseNmbTickets() {
+        while (true) {
+            int current = nmbTickets.get();
+            if (current <= 0) {
+                return false;
+            }
+            if (nmbTickets.compareAndSet(current, current - 1)) {
+                return true;
+            }
+            // If we get here, another thread changed the value since we read it
+            // We'll retry the operation
         }
-        this.nmbTickets -= 1;
     }
 
     public void increaseNmbTickets() {
-        this.nmbTickets += 1;
+        nmbTickets.incrementAndGet();
     }
 
     @Override
     public String toString() {
         return String.format(
                 "Id: %d%nName: %s%nLocation: %s%nDate: %s%nNumber of Tickets: %d",
-                id, name, location, date, nmbTickets
+                id, name, location, date, nmbTickets.get()
         );
     }
 }

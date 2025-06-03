@@ -1,6 +1,7 @@
 package org.example.event;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface EventServiceInterface {
     Event add(String name, String location, LocalDateTime date, int nmbTickets);
@@ -11,7 +12,7 @@ public interface EventServiceInterface {
 
     void delete(long id);
 
-    Event[] getAll();
+    List<Event> getAll();
 
     void deleteAll();
 }

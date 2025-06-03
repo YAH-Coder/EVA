@@ -1,6 +1,7 @@
 package org.example.customer;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface CustomerServiceInterface {
     Customer add(String username, String email, LocalDateTime birthday);
@@ -11,7 +12,7 @@ public interface CustomerServiceInterface {
 
     void delete(long id);
 
-    Customer[] getAll();
+    List<Customer> getAll();
 
     void deleteAll();
 }
