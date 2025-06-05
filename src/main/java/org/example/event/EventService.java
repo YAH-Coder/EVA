@@ -1,6 +1,7 @@
 package org.example.event;
 
 import org.example.utils.IDService;
+import org.example.utils.LogService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ public class EventService implements EventServiceInterface {
         long id = idService.getNew();
         Event event = new Event(id, name, location, date, nmbTickets);
         events.put(id, event);
+        LogService.log("Event-Created", id);
         return event;
     }
 

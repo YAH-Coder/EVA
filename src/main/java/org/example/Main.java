@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.client.PerformanceClient;
 import org.example.client.PerformanceClientParallel;
 
 public class Main {

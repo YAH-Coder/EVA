@@ -6,6 +6,7 @@ import org.example.customer.CustomerServiceInterface;
 import org.example.event.Event;
 import org.example.event.EventServiceInterface;
 import org.example.ticket.TicketServiceInterface;
+import org.example.utils.LogService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +26,7 @@ public class PerformanceClientParallel {
     public void createEvents(int nmbOfEvents, int nmbOfTickets) {
         long startTime = System.currentTimeMillis();
         IntStream.range(0, nmbOfEvents).parallel().forEach(i -> {
+            LogService.log("Create-Event");
             eventService.add("Event" + i, "Uni", LocalDateTime.now().plusDays(1), nmbOfTickets);
         });
         System.out.println("Creating " + nmbOfEvents + " Events took " + (System.currentTimeMillis() - startTime) + "ms");
@@ -33,6 +35,7 @@ public class PerformanceClientParallel {
     public void createCustomers(int nmbOfCustomers) {
         long startTime = System.currentTimeMillis();
         IntStream.range(0, nmbOfCustomers).parallel().forEach(i -> {
+            LogService.log("Create-Customer");
             customerService.add("Customer" + i, "customer" + i + "@email.de", LocalDateTime.now().minusYears(18));
         });
         System.out.println("Creating " + nmbOfCustomers + " Customers took " + (System.currentTimeMillis() - startTime) + "ms");
@@ -45,6 +48,7 @@ public class PerformanceClientParallel {
             eventService.getAll().parallelStream().forEach(event -> {
                 if (event.getNmbTickets() > 0) {
                     IntStream.range(0, amount).parallel().forEach(i -> {
+                        LogService.log("Create-Ticket");
                         ticketService.add(now, customer.getId(), event.getId());
                     });
                 }

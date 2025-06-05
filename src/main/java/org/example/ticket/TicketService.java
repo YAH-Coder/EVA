@@ -4,6 +4,7 @@ import org.example.utils.IDService;
 import org.example.customer.CustomerService;
 import org.example.event.Event;
 import org.example.event.EventService;
+import org.example.utils.LogService;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ public class TicketService implements TicketServiceInterface {
         Ticket ticket = new Ticket(id, purchaseDate, customerId, eventId);
         tickets.put(id, ticket);
         customerService.get(customerId).addTicket(eventId, id);
+        LogService.log("Ticket-Created", customerId);
         return ticket;
     }
 

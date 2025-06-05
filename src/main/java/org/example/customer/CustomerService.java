@@ -1,6 +1,7 @@
 package org.example.customer;
 
 import org.example.utils.IDService;
+import org.example.utils.LogService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ public class CustomerService implements CustomerServiceInterface {
         long id = idService.getNew();
         Customer customer = new Customer(id, username, email, birthday);
         customers.put(id, customer);
+        LogService.log("Customer-Created", id);
         return customer;
     }
 
