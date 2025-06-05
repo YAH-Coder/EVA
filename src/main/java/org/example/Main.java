@@ -38,5 +38,11 @@ public class Main {
 //        performanceClientParallelVirtualThreads.buyTickets(2);
 //        long endParallelVirtualThreads = System.currentTimeMillis();
 //        System.out.println("Total time parallel virtual threads: " + (endParallelVirtualThreads - start) + "ms");
+
+//        TicketShopStringReader ticketShopStringReader = new TicketShopStringReader();
+//        ticketShopStringReader.execute("ce;Event1;Location1;2026-10-01T10:00:00;100;5");
+//        ticketShopStringReader.execute("c;Event2;Location2;2026-10-02T10:00:00;200");
+//        ticketShopStringReader.execute("ce;Event3;Location3;2026-10-03T10:00:00;300");
+//        ticketShopStringReader.execute("ce;Event4;Location4;2026-10-04T10:00:00;400");
     }
 }
