@@ -44,7 +44,7 @@ public class TicketService implements TicketServiceInterface {
         Ticket ticket = new Ticket(id, purchaseDate, customerId, eventId);
         tickets.put(id, ticket);
         customerService.get(customerId).addTicket(eventId, id);
-        LogService.log("Ticket-Created", customerId);
+        LogService.log("Ticket-Created", id);
         return ticket;
     }
 
