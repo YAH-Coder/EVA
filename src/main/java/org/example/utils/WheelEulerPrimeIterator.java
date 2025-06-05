@@ -7,336 +7,196 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class WheelEulerPrimeIterator implements Iterator<Long> {
-    // 2×3×5 wheel - only consider numbers coprime to 2,3,5
     private static final int WHEEL_SIZE = 30;
-    private static final int[] WHEEL_OFFSETS = {1, 7, 11, 13, 17, 19, 23, 29}; // 8 positions in wheel
-    private static final byte[] WHEEL_INDEX = new byte[30]; // Lookup table
+    private static final int[] WHEEL_OFFSETS = {1,7,11,13,17,19,23,29};
+    private static final byte[] WHEEL_INDEX = new byte[WHEEL_SIZE];
+    private static final long[] SMALL_PRIMES = {2,3,5};
+    private static final int SEGMENT_SIZE = 262_144;
 
-    private static final long START = 1_000_000_007L;
-    private static final int SEGMENT_SIZE = 262144; // 256KB segments
-
-    // Thread-safe locks
     private final Object stateLock = new Object();
     private final ReentrantReadWriteLock primesLock = new ReentrantReadWriteLock();
 
-    // Volatile fields for thread safety
     private volatile long segmentStart;
-    private volatile long lastPrime;
-    private volatile int lastWheelPos;
-    private volatile boolean hasNextCached;
-    private volatile Long nextPrime;
+    private volatile long lastPrime = -1L;
+    private volatile int lastWheelPos = 0;
+    private volatile boolean hasNextCached = false;
+    private volatile Long nextPrime = null;
 
-    // Protected by primesLock
-    private long[] primes;
-    private int primeCount;
-    private int primeCapacity;
+    private long[] primes = new long[50_000];
+    private int primeCount = 0;
 
-    // Protected by stateLock
-    private BitSet sieve; // Only stores wheel positions
-    
-    // Store the exact start value to ensure we don't return primes less than this
+    private BitSet sieve;
     private final long exactStart;
 
     static {
-        // Initialize wheel lookup table
-        Arrays.fill(WHEEL_INDEX, (byte)-1);
-        for (int i = 0; i < WHEEL_OFFSETS.length; i++) {
-            WHEEL_INDEX[WHEEL_OFFSETS[i]] = (byte)i;
-        }
+        Arrays.fill(WHEEL_INDEX,(byte)-1);
+        for(int i=0;i<WHEEL_OFFSETS.length;i++) WHEEL_INDEX[WHEEL_OFFSETS[i]]=(byte)i;
     }
 
-    public WheelEulerPrimeIterator() {
-        this(START);
+    public WheelEulerPrimeIterator(){
+        this(1_000_000_001L);
     }
 
-    public WheelEulerPrimeIterator(long startValue) {
-        this.exactStart = startValue;
-        // Align segment start to beginning of a segment that contains startValue
-        this.segmentStart = (startValue / SEGMENT_SIZE) * SEGMENT_SIZE;
-        this.lastPrime = -1;
-        this.primeCapacity = 50000;
-        this.primes = new long[primeCapacity];
-        this.primeCount = 0;
-        this.lastWheelPos = 0;
-        this.hasNextCached = false;
-        this.nextPrime = null;
-
+    public WheelEulerPrimeIterator(long startValue){
+        if(startValue<0) throw new IllegalArgumentException("negative start");
+        exactStart=startValue;
+        segmentStart=(startValue/SEGMENT_SIZE)*SEGMENT_SIZE;
         generateBasePrimes();
         generateSegment();
-        
-        // Position lastWheelPos correctly for the startValue
-        positionToStartValue();
     }
-    
-    private void positionToStartValue() {
-        synchronized (stateLock) {
-            // Find the position in the sieve that corresponds to exactStart or the next prime after it
-            long wheelBase = segmentStart / WHEEL_SIZE;
-            
-            // Skip ahead in the current segment until we find a position >= exactStart
-            while (true) {
-                int nextBit = sieve.nextSetBit(lastWheelPos);
-                
-                if (nextBit == -1) {
-                    // Move to next segment if we've exhausted this one
-                    segmentStart += SEGMENT_SIZE;
-                    generateSegment();
-                    continue;
-                }
-                
-                int wheelIdx = nextBit % WHEEL_OFFSETS.length;
-                long base = wheelBase + nextBit / WHEEL_OFFSETS.length;
-                long candidate = wheelToNumber(base, wheelIdx);
-                
-                if (candidate >= exactStart) {
-                    // We found a valid starting position, don't advance lastWheelPos yet
-                    // so next() will find this position
-                    return;
-                }
-                
-                // Move past this position
-                lastWheelPos = nextBit + 1;
+
+    @Override
+    public boolean hasNext(){
+        synchronized(stateLock){
+            if(!hasNextCached){
+                nextPrime=computeNext();
+                hasNextCached=true;
             }
+            return nextPrime!=null;
         }
     }
 
-    private void generateBasePrimes() {
-        // Add wheel base primes
-        addPrime(2);
-        addPrime(3);
-        addPrime(5);
-
-        // Generate primes up to reasonable limit using wheel
-        int limit = 100000;
-        boolean[] isPrime = new boolean[limit + 1];
-        Arrays.fill(isPrime, true);
-        isPrime[0] = isPrime[1] = false;
-
-        // Mark wheel base multiples
-        for (int i = 4; i <= limit; i += 2) isPrime[i] = false;
-        for (int i = 9; i <= limit; i += 3) isPrime[i] = false;
-        for (int i = 25; i <= limit; i += 5) isPrime[i] = false;
-
-        // Wheel-based Euler sieve
-        for (long base = 0; base * WHEEL_SIZE <= limit; base++) {
-            for (int wheelIdx = 0; wheelIdx < WHEEL_OFFSETS.length; wheelIdx++) {
-                long num = base * WHEEL_SIZE + WHEEL_OFFSETS[wheelIdx];
-                if (num > limit) break;
-
-                if (isPrime[(int)num]) {
-                    addPrime(num);
-                    markCompositesWheel(num, limit, isPrime);
-                }
-            }
+    @Override
+    public Long next(){
+        synchronized(stateLock){
+            if(!hasNext()) throw new NoSuchElementException();
+            Long r=nextPrime;
+            hasNextCached=false;
+            nextPrime=null;
+            return r;
         }
     }
 
-    private void markCompositesWheel(long num, int limit, boolean[] isPrime) {
-        primesLock.readLock().lock();
-        try {
-            for (int i = 3; i < primeCount; i++) { // Skip 2,3,5 as they're wheel bases
-                long prime = primes[i];
-                long composite = prime * num;
-
-                if (composite > limit) break;
-                isPrime[(int)composite] = false;
-
-                if (num % prime == 0) break; // Euler's key optimization
-            }
-        } finally {
-            primesLock.readLock().unlock();
-        }
+    @Override
+    public void remove(){
+        throw new UnsupportedOperationException();
     }
 
-    private void addPrime(long prime) {
+    private static long wheelToNumber(long base,int offset){
+        return base*WHEEL_SIZE+WHEEL_OFFSETS[offset];
+    }
+
+    private static boolean isWheelNumber(long n){
+        return WHEEL_INDEX[(int)(n%WHEEL_SIZE)]!=-1;
+    }
+
+    private static int getWheelIndex(long n){
+        return WHEEL_INDEX[(int)(n%WHEEL_SIZE)];
+    }
+
+    private static boolean overflow(long a,long b){
+        return a>0&&b>0&&a>Long.MAX_VALUE/b;
+    }
+
+    private void generateBasePrimes(){
+        int limit=100_000;
+        boolean[] mark=new boolean[limit+1];
+        Arrays.fill(mark,true);
+        mark[0]=mark[1]=false;
+        for(int p=2;p*p<=limit;p++) if(mark[p]) for(int m=p*p;m<=limit;m+=p) mark[m]=false;
+        for(int n=2;n<=limit;n++) if(mark[n]) addPrime(n);
+    }
+
+    private void addPrime(long p){
         primesLock.writeLock().lock();
-        try {
-            if (primeCount >= primeCapacity) {
-                primeCapacity *= 2;
-                primes = Arrays.copyOf(primes, primeCapacity);
-            }
-            primes[primeCount++] = prime;
-        } finally {
-            primesLock.writeLock().unlock();
-        }
+        try{
+            if(primeCount==primes.length) primes=Arrays.copyOf(primes,primes.length*2);
+            primes[primeCount++]=p;
+        }finally{primesLock.writeLock().unlock();}
     }
 
-    private long wheelToNumber(long wheelBase, int wheelOffset) {
-        return wheelBase * WHEEL_SIZE + WHEEL_OFFSETS[wheelOffset];
-    }
+    private void generateSegment(){
+        long end=segmentStart+SEGMENT_SIZE-1;
+        long wheelBase0=segmentStart/WHEEL_SIZE;
+        int slots=(int)(((end-segmentStart)/WHEEL_SIZE+1)*WHEEL_OFFSETS.length);
+        sieve=new BitSet(slots);
+        sieve.set(0,slots);
 
-    private boolean isWheelNumber(long num) {
-        return WHEEL_INDEX[(int)(num % WHEEL_SIZE)] != -1;
-    }
-
-    private int getWheelIndex(long num) {
-        return WHEEL_INDEX[(int)(num % WHEEL_SIZE)];
-    }
-
-    private void generateSegment() {
-        // This method is called from synchronized context, so no additional locking needed here
-        int wheelSlots = (SEGMENT_SIZE / WHEEL_SIZE + 1) * WHEEL_OFFSETS.length;
-        sieve = new BitSet(wheelSlots);
-        sieve.set(0, wheelSlots); // Mark all wheel positions as potential primes
-
-        long segmentEnd = segmentStart + SEGMENT_SIZE - 1;
-        long wheelBase = segmentStart / WHEEL_SIZE;
-
-        // Process only wheel positions using Euler's sieve
-        for (long base = wheelBase; base * WHEEL_SIZE <= segmentEnd; base++) {
-            for (int wheelIdx = 0; wheelIdx < WHEEL_OFFSETS.length; wheelIdx++) {
-                long num = base * WHEEL_SIZE + WHEEL_OFFSETS[wheelIdx];
-
-                if (num < segmentStart || num > segmentEnd) continue;
-
-                int bitPos = (int)((base - wheelBase) * WHEEL_OFFSETS.length + wheelIdx);
-                if (bitPos >= wheelSlots || !sieve.get(bitPos)) continue;
-
-                // Found a prime - add to collection
-                long lastKnownPrime;
-                primesLock.readLock().lock();
-                try {
-                    lastKnownPrime = primeCount > 0 ? primes[primeCount - 1] : 0;
-                } finally {
-                    primesLock.readLock().unlock();
-                }
-
-                if (num > lastKnownPrime) {
-                    addPrime(num);
-                }
-
-                // Mark composites using wheel-optimized Euler method
-                markWheelComposites(num, segmentEnd, wheelBase);
-            }
-        }
-
-        lastWheelPos = 0;
-    }
-
-    private void markWheelComposites(long num, long segmentEnd, long wheelBase) {
+        long sqrt=(long)Math.sqrt(end);
         primesLock.readLock().lock();
-        try {
-            for (int i = 3; i < primeCount; i++) { // Skip wheel base primes 2,3,5
-                long prime = primes[i];
-                long composite = prime * num;
-
-                if (composite > segmentEnd) break;
-                if (composite < segmentStart) continue;
-
-                // Only mark if composite falls on wheel position
-                if (isWheelNumber(composite)) {
-                    long compBase = composite / WHEEL_SIZE;
-                    int compWheelIdx = getWheelIndex(composite);
-                    int bitPos = (int)((compBase - wheelBase) * WHEEL_OFFSETS.length + compWheelIdx);
-
-                    if (bitPos >= 0 && bitPos < sieve.size()) {
-                        sieve.clear(bitPos);
-                    }
+        try{
+            for(int i=0;i<primeCount&&primes[i]<=sqrt;i++){
+                long p=primes[i];
+                if(p==2||p==3||p==5) continue;
+                long first=((segmentStart+p-1)/p)*p;
+                while(!isWheelNumber(first)) first+=p;
+                for(long m=first;m<=end;m+=p){
+                    if(!isWheelNumber(m)) continue;
+                    int bit=(int)(((m/WHEEL_SIZE)-wheelBase0)*WHEEL_OFFSETS.length+getWheelIndex(m));
+                    sieve.clear(bit);
                 }
-
-                if (num % prime == 0) break; // Euler's optimization
             }
-        } finally {
-            primesLock.readLock().unlock();
+        }finally{primesLock.readLock().unlock();}
+
+        for(int pos=sieve.nextSetBit(0);pos>=0;pos=sieve.nextSetBit(pos+1)){
+            long cand=wheelToNumber(wheelBase0+pos/WHEEL_OFFSETS.length,pos%WHEEL_OFFSETS.length);
+            if(cand>end) break;
+            addPrime(cand);
+            markEuler(cand,end,wheelBase0);
         }
+        lastWheelPos=0;
     }
 
-    private Long computeNext() {
-        // This method is called from synchronized context
-        while (true) {
-            // Find next prime in current segment
-            int nextBit = sieve.nextSetBit(lastWheelPos);
-
-            if (nextBit != -1 && nextBit < sieve.size()) {
-                long wheelBase = segmentStart / WHEEL_SIZE;
-                int wheelIdx = nextBit % WHEEL_OFFSETS.length;
-                long base = wheelBase + nextBit / WHEEL_OFFSETS.length;
-
-                lastPrime = wheelToNumber(base, wheelIdx);
-                lastWheelPos = nextBit + 1;
-                
-                // Make sure we never return a prime less than exactStart
-                if (lastPrime < exactStart) {
-                    continue;
-                }
-
-                return lastPrime;
+    private void markEuler(long q,long end,long wheelBase0){
+        primesLock.readLock().lock();
+        try{
+            for(int i=0;i<primeCount;i++){
+                long p=primes[i];
+                if(p==2||p==3||p==5) continue;
+                if(overflow(p,q)) break;
+                long comp=p*q;
+                if(comp>end) break;
+                if(!isWheelNumber(comp)) continue;
+                int bit=(int)(((comp/WHEEL_SIZE)-wheelBase0)*WHEEL_OFFSETS.length+getWheelIndex(comp));
+                if(bit>=0&&bit<sieve.size()) sieve.clear(bit);
+                if(q%p==0) break;
             }
+        }finally{primesLock.readLock().unlock();}
+    }
 
-            // Move to next segment
-            segmentStart += SEGMENT_SIZE;
+    private Long computeNext(){
+        while(true){
+            int bit=sieve.nextSetBit(lastWheelPos);
+            if(bit>=0){
+                long wheelBase=segmentStart/WHEEL_SIZE;
+                long cand=wheelToNumber(wheelBase+bit/WHEEL_OFFSETS.length,bit%WHEEL_OFFSETS.length);
+                lastPrime=cand;
+                lastWheelPos=bit+1;
+                if(cand>=exactStart) return cand;
+                continue;
+            }
+            segmentStart+=SEGMENT_SIZE;
             generateSegment();
+            lastWheelPos=0;
         }
     }
 
-    @Override
-    public boolean hasNext() {
-        synchronized (stateLock) {
-            if (!hasNextCached) {
-                nextPrime = computeNext();
-                hasNextCached = true;
-            }
-            return nextPrime != null; // Always true for infinite prime sequence
-        }
+    public long getLastPrime(){
+        synchronized(stateLock){return lastPrime;}
     }
 
-    @Override
-    public Long next() {
-        synchronized (stateLock) {
-            if (!hasNext()) {
-                throw new NoSuchElementException("No more primes available");
-            }
-
-            Long result = nextPrime;
-            hasNextCached = false;
-            nextPrime = null;
-            return result;
-        }
-    }
-
-    // Iterator doesn't support remove operation for prime sequences
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException("Cannot remove primes from sequence");
-    }
-
-    // Utility methods for convenience
-    public long getLastPrime() {
-        synchronized (stateLock) {
-            return lastPrime;
-        }
-    }
-
-    public int getKnownPrimeCount() {
+    public int getKnownPrimeCount(){
         primesLock.readLock().lock();
-        try {
-            return primeCount;
-        } finally {
-            primesLock.readLock().unlock();
-        }
+        try{return primeCount;}finally{primesLock.readLock().unlock();}
     }
 
-    public boolean isPrime(long n) {
-        if (n == 2 || n == 3 || n == 5) return true;
-        if (n < 2 || !isWheelNumber(n)) return false;
-
+    public boolean isPrime(long n){
+        if(n<2) return false;
+        for(long sp:SMALL_PRIMES) if(n==sp) return true;
+        if(!isWheelNumber(n)) return false;
+        long limit=(long)Math.sqrt(n);
         primesLock.readLock().lock();
-        try {
-            for (int i = 0; i < primeCount && primes[i] * primes[i] <= n; i++) {
-                if (n % primes[i] == 0) return false;
-            }
-        } finally {
-            primesLock.readLock().unlock();
-        }
+        try{
+            for(int i=0;i<primeCount&&primes[i]<=limit;i++) if(n%primes[i]==0) return false;
+        }finally{primesLock.readLock().unlock();}
         return true;
     }
 
-    // Create an iterable that can be used in enhanced for loops
-    public static Iterable<Long> primes() {
-        return () -> new WheelEulerPrimeIterator();
+    public static Iterable<Long> primes(){
+        return WheelEulerPrimeIterator::new;
     }
 
-    public static Iterable<Long> primes(long startFrom) {
-        return () -> new WheelEulerPrimeIterator(startFrom);
+    public static Iterable<Long> primes(long start){
+        return ()->new WheelEulerPrimeIterator(start);
     }
 }
