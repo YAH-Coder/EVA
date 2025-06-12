@@ -1,6 +1,6 @@
 package org.example.client;
 
-import org.example.TicketShop;
+import org.example.TicketShopInterface;
 import org.example.customer.Customer;
 import org.example.customer.CustomerServiceInterface;
 import org.example.event.Event;
@@ -19,11 +19,11 @@ public class CLIClient {
     private final CustomerServiceInterface customerService;
     private final TicketServiceInterface ticketService;
 
-    public CLIClient(TicketShop ticketShop) {
+    public CLIClient(TicketShopInterface ticketShopInterface) {
         scanner = new Scanner(System.in);
-        eventService = ticketShop.getEventServiceInterface();
-        customerService = ticketShop.getCustomerServiceInterface();
-        ticketService = ticketShop.getTicketServiceInterface();
+        eventService = ticketShopInterface.getEventServiceInterface();
+        customerService = ticketShopInterface.getCustomerServiceInterface();
+        ticketService = ticketShopInterface.getTicketServiceInterface();
     }
 
     private void help() {

@@ -1,6 +1,6 @@
 package org.example.client;
 
-import org.example.TicketShop;
+import org.example.TicketShopInterface;
 import org.example.customer.Customer;
 import org.example.customer.CustomerServiceInterface;
 import org.example.event.Event;
@@ -18,10 +18,10 @@ public class PerformanceClientParallelVirtualThreads {
     private final CustomerServiceInterface customerService;
     private final TicketServiceInterface ticketService;
 
-    public PerformanceClientParallelVirtualThreads(TicketShop ticketShop) {
-        this.eventService = ticketShop.getEventServiceInterface();
-        this.customerService = ticketShop.getCustomerServiceInterface();
-        this.ticketService = ticketShop.getTicketServiceInterface();
+    public PerformanceClientParallelVirtualThreads(TicketShopInterface ticketShopInterface) {
+        this.eventService = ticketShopInterface.getEventServiceInterface();
+        this.customerService = ticketShopInterface.getCustomerServiceInterface();
+        this.ticketService = ticketShopInterface.getTicketServiceInterface();
     }
 
     public void createEvents(int nmbOfEvents, int nmbOfTickets) {

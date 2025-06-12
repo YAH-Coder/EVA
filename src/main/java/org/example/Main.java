@@ -1,6 +1,7 @@
 package org.example;
 
-import org.example.utils.TcpClient;
+import org.example.client.CLIClient;
+import org.example.client.TcpClient;
 
 public class Main {
 
@@ -9,12 +10,17 @@ public class Main {
         Server server = new Server(8080, ticketShopStringReader);
         server.start();
 
-        TcpClient tcpClient = new TcpClient(8080);
-        tcpClient.connect();
-        tcpClient.sendMessage("ce;Event1;Location1;2026-10-01T10:00:00;100");
-        System.out.println(tcpClient.receiveMessage());
-//        CLIClient CLIClient = new CLIClient(ticketShop);
-//        CLIClient.start();
+//        TcpClient tcpClient = new TcpClient("172.24.130.151",8080);
+//        tcpClient.connect();
+//        tcpClient.sendMessage("ce;Event1;Location1;2026-10-01T10:00:00;100");
+//        System.out.println(tcpClient.receiveMessage());
+//        tcpClient.disconnect();
+
+        TicketShopClient ticketShopClient = new TicketShopClient(8080);
+        CLIClient CLIClient = new CLIClient(ticketShopClient);
+        CLIClient.start();
+        server.stop();
+
 //        long start = System.currentTimeMillis();
 //        PerformanceClient performanceClient = new PerformanceClient(ticketShop);
 //        performanceClient.createEvents(100, 1000);
