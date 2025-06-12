@@ -32,17 +32,15 @@ public class TicketShopStringReader {
         return ticketServiceInterface;
     }
 
-    public void execute(String command) {
+    public String execute(String command) {
         String[] parts = command.split(";");
         if (parts.length == 0) {
-            System.err.println("No command provided.");
-            return;
+            return "No command provided.";
         }
         switch( parts[0] ) {
             case "ce":
                 if (parts.length != 5) {
-                    System.err.println("Invalid command format for creating event.");
-                    return;
+                    return "Invalid command format for creating event.";
                 }
                 try {
                     String name = parts[1];
@@ -50,14 +48,12 @@ public class TicketShopStringReader {
                     LocalDateTime date = LocalDateTime.parse(parts[3]);
                     int nmbTickets = Integer.parseInt(parts[4]);
                     eventServiceInterface.add(name, location, date, nmbTickets);
-                    System.out.println("Event created: " + name);
+                   return "Event created: " + name;
                 } catch (Exception e) {
-                    System.err.println("Error creating event: " + e.getMessage());
+                    return "Error creating event: " + e.getMessage();
                 }
-                break;
-
             default:
-                System.err.println("Unknown command: " + command);
+                return "Unknown command: " + command;
         }
     }
 }

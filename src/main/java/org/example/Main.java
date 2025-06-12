@@ -1,12 +1,18 @@
 package org.example;
 
-import org.example.client.PerformanceClient;
-import org.example.client.PerformanceClientParallel;
+import org.example.utils.TcpClient;
 
 public class Main {
 
     public static void main(String[] args) {
-        TicketShop ticketShop = new TicketShop();
+        TicketShopStringReader ticketShopStringReader = new TicketShopStringReader();
+        Server server = new Server(8080, ticketShopStringReader);
+        server.start();
+
+        TcpClient tcpClient = new TcpClient(8080);
+        tcpClient.connect();
+        tcpClient.sendMessage("ce;Event1;Location1;2026-10-01T10:00:00;100");
+        System.out.println(tcpClient.receiveMessage());
 //        CLIClient CLIClient = new CLIClient(ticketShop);
 //        CLIClient.start();
 //        long start = System.currentTimeMillis();
@@ -19,15 +25,15 @@ public class Main {
 //        long end = System.currentTimeMillis();
 //        System.out.println("Total time: " + (end - start) + "ms");
 
-        long start = System.currentTimeMillis();
-        PerformanceClientParallel performanceClientParallel = new PerformanceClientParallel(ticketShop);
-        performanceClientParallel.createEvents(100, 1000);
-        performanceClientParallel.createCustomers(1000);
-        performanceClientParallel.buyTickets(1);
-        performanceClientParallel.createEvents(100, 2000);
-        performanceClientParallel.buyTickets(2);
-        long endParallel = System.currentTimeMillis();
-        System.out.println("Total time parallel: " + (endParallel - start) + "ms");
+//        long start = System.currentTimeMillis();
+//        PerformanceClientParallel performanceClientParallel = new PerformanceClientParallel(ticketShop);
+//        performanceClientParallel.createEvents(100, 1000);
+//        performanceClientParallel.createCustomers(1000);
+//        performanceClientParallel.buyTickets(1);
+//        performanceClientParallel.createEvents(100, 2000);
+//        performanceClientParallel.buyTickets(2);
+//        long endParallel = System.currentTimeMillis();
+//        System.out.println("Total time parallel: " + (endParallel - start) + "ms");
 
 //        long start = System.currentTimeMillis();
 //        PerformanceClientParallelVirtualThreads performanceClientParallelVirtualThreads = new PerformanceClientParallelVirtualThreads(ticketShop);
