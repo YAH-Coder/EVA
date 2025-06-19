@@ -16,7 +16,7 @@ public class Main {
 //        System.out.println(tcpClient.receiveMessage());
 //        tcpClient.disconnect();
 
-        TicketShopClient ticketShopClient = new TicketShopClient(8080);
+        TicketShopInterface ticketShopClient = new TicketShopClient(8080);
         CLIClient CLIClient = new CLIClient(ticketShopClient);
         CLIClient.start();
         server.stop();
