@@ -26,7 +26,6 @@ public class TcpClient {
             socket = new Socket(host, port);
             out = new PrintWriter(socket.getOutputStream(), true);
             connected = true;
-            System.out.println("Connected to server at " + host + ":" + port);
             return true;
         } catch (IOException e) {
             System.err.println("Error connecting to server: " + e.getMessage());
@@ -84,7 +83,6 @@ public class TcpClient {
                 socket.close();
             }
             connected = false;
-            System.out.println("Disconnected from server");
         } catch (IOException e) {
             System.err.println("Error disconnecting: " + e.getMessage());
             e.printStackTrace();

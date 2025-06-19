@@ -57,20 +57,16 @@ public class Server implements Runnable {
     public void run() {
         while (running) {
             try {
-                System.out.println("Waiting for client connections...");
                 socket = serverSocket.accept();
-                System.out.println("Client connected: " + socket.getInetAddress());
-                
+
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String line = reader.readLine();
-                System.out.println("Received from client: " + line);
-                
+
                 Object response = ticketShopStringReader.execute(line);
                 
                 ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
                 objectOut.writeObject(response);
                 objectOut.flush();
-                System.out.println("Sent to client: " + response);
             } catch (IOException e) {
                 if (!running) {
                     break;
