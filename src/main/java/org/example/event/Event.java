@@ -1,9 +1,10 @@
 package org.example.event;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Event {
+public class Event implements Serializable {
     private final long id;
     private String name;
     private String location;

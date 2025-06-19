@@ -1,6 +1,7 @@
 package org.example;
 
 import org.example.client.CLIClient;
+import org.example.client.PerformanceClient;
 import org.example.client.TcpClient;
 
 public class Main {
@@ -17,19 +18,20 @@ public class Main {
 //        tcpClient.disconnect();
 
         TicketShopInterface ticketShopClient = new TicketShopClient(8080);
-        CLIClient CLIClient = new CLIClient(ticketShopClient);
-        CLIClient.start();
-        server.stop();
+//        CLIClient CLIClient = new CLIClient(ticketShopClient);
+//        CLIClient.start();
 
-//        long start = System.currentTimeMillis();
-//        PerformanceClient performanceClient = new PerformanceClient(ticketShop);
-//        performanceClient.createEvents(100, 1000);
-//        performanceClient.createCustomers(1000);
-//        performanceClient.buyTickets(1);
-//        performanceClient.createEvents(100, 2000);
-//        performanceClient.buyTickets(2);
-//        long end = System.currentTimeMillis();
-//        System.out.println("Total time: " + (end - start) + "ms");
+        long start = System.currentTimeMillis();
+        PerformanceClient performanceClient = new PerformanceClient(ticketShopClient);
+        performanceClient.createEvents(100, 1000);
+        performanceClient.createCustomers(1000);
+        performanceClient.buyTickets(1);
+        performanceClient.createEvents(100, 2000);
+        performanceClient.buyTickets(2);
+        long end = System.currentTimeMillis();
+        System.out.println("Total time: " + (end - start) + "ms");
+
+        server.stop();
 
 //        long start = System.currentTimeMillis();
 //        PerformanceClientParallel performanceClientParallel = new PerformanceClientParallel(ticketShop);

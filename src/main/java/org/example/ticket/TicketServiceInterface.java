@@ -1,6 +1,7 @@
 package org.example.ticket;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface TicketServiceInterface {
     Ticket add(LocalDateTime purchaseDate, Long customerId, Long eventId);
@@ -9,7 +10,7 @@ public interface TicketServiceInterface {
 
     void delete(long id);
 
-    Ticket[] getAll();
+    List<Ticket> getAll();
 
     void deleteAll();
 }

@@ -16,9 +16,9 @@ public class EventServiceTcp implements EventServiceInterface {
     public Event add(String name, String location, LocalDateTime date, int nmbTickets) {
         client.connect();
         client.sendMessage(String.join(";", "ce", name, location, date.toString(), Integer.toString(nmbTickets)));
-        System.out.println(client.receiveMessage());
+        Event event = (Event) client.receiveObject();
         client.disconnect();
-        return null;
+        return event;
     }
 
     @Override
@@ -36,7 +36,11 @@ public class EventServiceTcp implements EventServiceInterface {
 
     @Override
     public List<Event> getAll() {
-        return null;
+        client.connect();
+        client.sendMessage("gae");
+        List<Event> events = (List<Event>) client.receiveObject();
+        client.disconnect();
+        return events;
     }
 
     @Override

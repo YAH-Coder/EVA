@@ -32,7 +32,7 @@ public class TicketShopStringReader {
         return ticketServiceInterface;
     }
 
-    public String execute(String command) {
+    public Object execute(String command) {
         String[] parts = command.split(";");
         if (parts.length == 0) {
             return "No command provided.";
@@ -40,17 +40,46 @@ public class TicketShopStringReader {
         switch( parts[0] ) {
             case "ce":
                 if (parts.length != 5) {
-                    return "Invalid command format for creating event.";
+                    return "Invalid command format";
                 }
                 try {
                     String name = parts[1];
                     String location = parts[2];
                     LocalDateTime date = LocalDateTime.parse(parts[3]);
                     int nmbTickets = Integer.parseInt(parts[4]);
-                    eventServiceInterface.add(name, location, date, nmbTickets);
-                   return "Event created: " + name;
+                    return eventServiceInterface.add(name, location, date, nmbTickets);
                 } catch (Exception e) {
                     return "Error creating event: " + e.getMessage();
+                }
+            case "gae":
+                if (parts.length != 1) {
+                    return "Invalid command format";
+                }
+                try {
+                    return eventServiceInterface.getAll();
+                } catch (Exception e) {
+                    return "Error getting all events: " + e.getMessage();
+                }
+            case "cc":
+                if (parts.length != 4) {
+                    return "Invalid command format";
+                }
+                try {
+                    String username = parts[1];
+                    String email = parts[2];
+                    LocalDateTime birthday = LocalDateTime.parse(parts[3]);
+                    return customerServiceInterface.add(username, email, birthday);
+                } catch (Exception e) {
+                    return "Error creating user: " + e.getMessage();
+                }
+            case "gac":
+                if (parts.length != 1) {
+                    return "Invalid command format";
+                }
+                try {
+                    return customerServiceInterface.getAll();
+                } catch (Exception e) {
+                    return "Error getting all customers: " + e.getMessage();
                 }
             default:
                 return "Unknown command: " + command;

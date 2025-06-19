@@ -1,15 +1,12 @@
 package org.example.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 
 public class TcpClient {
     private Socket socket;
     private PrintWriter out;
-    private BufferedReader in;
+    private ObjectInputStream objectIn;
     private String host;
     private int port;
     private boolean connected;
@@ -28,7 +25,6 @@ public class TcpClient {
         try {
             socket = new Socket(host, port);
             out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             connected = true;
             System.out.println("Connected to server at " + host + ":" + port);
             return true;
@@ -55,16 +51,18 @@ public class TcpClient {
         }
     }
 
-    public String receiveMessage() {
+    public Object receiveObject() {
         if (!connected) {
             System.err.println("Not connected to server. Call connect() first.");
             return null;
         }
         
         try {
-            return in.readLine();
-        } catch (IOException e) {
-            System.err.println("Error receiving message: " + e.getMessage());
+            // Create ObjectInputStream to read the object response
+            objectIn = new ObjectInputStream(socket.getInputStream());
+            return objectIn.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error receiving object: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
@@ -79,8 +77,8 @@ public class TcpClient {
             if (out != null) {
                 out.close();
             }
-            if (in != null) {
-                in.close();
+            if (objectIn != null) {
+                objectIn.close();
             }
             if (socket != null && !socket.isClosed()) {
                 socket.close();

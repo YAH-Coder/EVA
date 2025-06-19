@@ -253,7 +253,7 @@ public class CLIClient {
         try {
             System.out.println("Enter customer Id: ");
             long customerId = Long.parseLong(scanner.nextLine());
-            System.out.println("Enter customer Id: ");
+            System.out.println("Enter event id: ");
             long eventId = Long.parseLong(scanner.nextLine());
             ticketService.add(LocalDateTime.now(), customerId, eventId);
             System.out.println("Created Ticket for event wit id=" + eventId);
@@ -287,7 +287,7 @@ public class CLIClient {
     }
 
     private void getAllTickets() {
-        Ticket[] tickets = ticketService.getAll();
+        List<Ticket> tickets = ticketService.getAll();
         for (Ticket ticket : tickets) {
             System.out.println(ticket);
         }

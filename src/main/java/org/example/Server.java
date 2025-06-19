@@ -1,18 +1,13 @@
 package org.example;
 
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server implements Runnable {
     private Socket socket;
     private ServerSocket serverSocket;
-    private DataInputStream dataInputStream;
-    private  TicketShopStringReader ticketShopStringReader;
+    private TicketShopStringReader ticketShopStringReader;
     private Thread serverThread;
     private boolean running;
 
@@ -67,14 +62,14 @@ public class Server implements Runnable {
                 System.out.println("Client connected: " + socket.getInetAddress());
                 
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-                
                 String line = reader.readLine();
                 System.out.println("Received from client: " + line);
                 
-                String response = ticketShopStringReader.execute(line);
+                Object response = ticketShopStringReader.execute(line);
                 
-                writer.println(response);
+                ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
+                objectOut.writeObject(response);
+                objectOut.flush();
                 System.out.println("Sent to client: " + response);
             } catch (IOException e) {
                 if (!running) {

@@ -7,7 +7,8 @@ import org.example.event.EventService;
 import org.example.utils.LogService;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -71,8 +72,8 @@ public class TicketService implements TicketServiceInterface {
     }
 
     @Override
-    public Ticket[] getAll() {
-        return tickets.values().toArray(new Ticket[0]);
+    public List<Ticket> getAll() {
+        return new ArrayList<>(tickets.values());
     }
 
     @Override
