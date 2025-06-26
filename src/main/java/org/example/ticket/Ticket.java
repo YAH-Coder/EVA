@@ -5,9 +5,10 @@ import org.example.customer.CustomerService;
 import org.example.event.Event;
 import org.example.event.EventService;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public class Ticket {
+public class Ticket implements Serializable {
     private final long id;
     private final LocalDateTime purchaseDate;
     private final long customerId;

@@ -81,6 +81,27 @@ public class TicketShopStringReader {
                 } catch (Exception e) {
                     return "Error getting all customers: " + e.getMessage();
                 }
+            case "ct":
+                if (parts.length != 4) {
+                    return "Invalid command format";
+                }
+                try {
+                    LocalDateTime purchaseDate= LocalDateTime.parse(parts[1]);
+                    Long customerId = Long.parseLong(parts[2]);
+                    Long eventId = Long.parseLong(parts[3]);
+                    return ticketServiceInterface.add(purchaseDate, customerId, eventId);
+                } catch (Exception e) {
+                    return "Error creating ticket: " + e.getMessage();
+                }
+            case "gat":
+                if (parts.length != 1) {
+                    return "Invalid command format";
+                }
+                try {
+                    return ticketServiceInterface.getAll();
+                } catch (Exception e) {
+                    return "Error getting all tickets: " + e.getMessage();
+                }
             default:
                 return "Unknown command: " + command;
         }

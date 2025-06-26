@@ -37,7 +37,7 @@ public class PerformanceClient {
     public void createCustomers(int nmbOfCustomers) {
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < nmbOfCustomers; i++) {
-            customerService.add("Customer" + i, "customer" + i + "@email.de", LocalDateTime.now().minusYears(18));
+            customerService.add("Customer" + i, "customer" + i + "@email.de", LocalDateTime.now().minusYears(19));
         }
         System.out.println("Creating " + nmbOfCustomers + " Customers took " + (System.currentTimeMillis() - startTime) + "ms");
     }

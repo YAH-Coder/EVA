@@ -1,11 +1,12 @@
 package org.example.customer;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
 
-public class Customer {
+public class Customer implements Serializable {
     private long id;
     private String username;
     private String email;
