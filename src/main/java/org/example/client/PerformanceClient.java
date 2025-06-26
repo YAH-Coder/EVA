@@ -8,11 +8,14 @@ import org.example.event.EventServiceInterface;
 import org.example.ticket.TicketServiceInterface;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PerformanceClient {
     private final EventServiceInterface eventService;
     private final CustomerServiceInterface customerService;
     private final TicketServiceInterface ticketService;
+    private final List<Event> newlyCreatedEvents = new ArrayList<>();
 
     public PerformanceClient(TicketShopInterface ticketShopInterface) {
         this.eventService = ticketShopInterface.getEventServiceInterface();
@@ -22,8 +25,11 @@ public class PerformanceClient {
 
     public void createEvents(int nmbOfEvents, int nmbOfTickets) {
         long startTime = System.currentTimeMillis();
+        newlyCreatedEvents.clear();
+
         for (int i = 0; i < nmbOfEvents; i++) {
-            eventService.add("Event" + i, "Uni", LocalDateTime.now().plusDays(1), nmbOfTickets);
+            Event event = eventService.add("Event" + i, "Uni", LocalDateTime.now().plusDays(1), nmbOfTickets);
+            newlyCreatedEvents.add(event);
         }
         System.out.println("Creating " + nmbOfEvents + " Events took " + (System.currentTimeMillis() - startTime) + "ms");
     }
@@ -39,7 +45,7 @@ public class PerformanceClient {
     public void buyTickets(int amount) {
         long startTime = System.currentTimeMillis();
         for (Customer customer: customerService.getAll()) {
-            for (Event event: eventService.getAll()) {
+            for (Event event: newlyCreatedEvents) {
                 if (event.getNmbTickets() == 0) {
                     continue;
                 }
