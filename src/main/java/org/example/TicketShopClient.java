@@ -2,11 +2,13 @@ package org.example;
 
 import org.example.customer.CustomerService;
 import org.example.customer.CustomerServiceInterface;
+import org.example.customer.CustomerServiceTcp;
 import org.example.event.EventServiceInterface;
 import org.example.event.EventServiceTcp;
 import org.example.ticket.TicketService;
 import org.example.ticket.TicketServiceInterface;
 import org.example.client.TcpClient;
+import org.example.ticket.TicketServiceTcp;
 
 public class TicketShopClient implements TicketShopInterface {
     private final CustomerServiceInterface customerServiceInterface;
@@ -16,9 +18,9 @@ public class TicketShopClient implements TicketShopInterface {
 
     public TicketShopClient(String host, int port) {
         this.tcpClient = new TcpClient(host, port);
-        this.customerServiceInterface = CustomerService.getInstance();
+        this.customerServiceInterface = new CustomerServiceTcp(tcpClient);
         this.eventServiceInterface = new EventServiceTcp(tcpClient);
-        this.ticketServiceInterface = TicketService.getInstance();
+        this.ticketServiceInterface = new TicketServiceTcp(tcpClient);
     }
 
     public TicketShopClient(int port) {
