@@ -24,10 +24,7 @@ public class TicketShopClient implements TicketShopInterface {
     }
 
     public TicketShopClient(int port) {
-        this.tcpClient = new TcpClient("localhost", port);
-        this.customerServiceInterface = CustomerService.getInstance();
-        this.eventServiceInterface = new EventServiceTcp(tcpClient);
-        this.ticketServiceInterface = TicketService.getInstance();
+        this("localhost", port);
     }
 
     @Override

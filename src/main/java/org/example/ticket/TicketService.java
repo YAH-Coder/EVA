@@ -1,9 +1,9 @@
 package org.example.ticket;
 
-import org.example.utils.IDService;
 import org.example.customer.CustomerService;
 import org.example.event.Event;
 import org.example.event.EventService;
+import org.example.utils.IDService;
 import org.example.utils.LogService;
 
 import java.time.LocalDateTime;
@@ -35,13 +35,25 @@ public class TicketService implements TicketServiceInterface {
     public Ticket add(LocalDateTime purchaseDate, Long customerId, Long eventId) {
         Event event = eventService.get(eventId);
 
-        // Try to decrease the ticket count, if it fails (returns false) then there are no tickets available
         if (!event.decreaseNmbTickets()) {
             throw new RuntimeException("No tickets available for event with ID " + eventId);
         }
 
-        // If we get here, we've successfully secured a ticket
         long id = idService.getNew();
+        try {
+            customerService.get(customerId);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Customer ID " + customerId + " not found.");
+        }
+        try {
+            eventService.get(eventId);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Event ID " + eventId + " not found.");
+        }
+        if (purchaseDate.isAfter(event.getDate())) {
+            throw new IllegalArgumentException("Purchase date must be before event date.");
+        }
+
         Ticket ticket = new Ticket(id, purchaseDate, customerId, eventId);
         tickets.put(id, ticket);
         customerService.get(customerId).addTicket(eventId, id);
