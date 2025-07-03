@@ -1,13 +1,12 @@
 package org.example;
 
-import org.example.customer.CustomerService;
+import org.example.client.PerformanceClient;
+import org.example.client.TcpClient;
 import org.example.customer.CustomerServiceInterface;
 import org.example.customer.CustomerServiceTcp;
 import org.example.event.EventServiceInterface;
 import org.example.event.EventServiceTcp;
-import org.example.ticket.TicketService;
 import org.example.ticket.TicketServiceInterface;
-import org.example.client.TcpClient;
 import org.example.ticket.TicketServiceTcp;
 
 public class TicketShopClient implements TicketShopInterface {
@@ -40,5 +39,18 @@ public class TicketShopClient implements TicketShopInterface {
     @Override
     public TicketServiceInterface getTicketServiceInterface() {
         return ticketServiceInterface;
+    }
+
+    public static void main(String[] args) {
+        TicketShopClient ticketShopClient = new TicketShopClient(9090);
+        long start = System.currentTimeMillis();
+        PerformanceClient performanceClient = new PerformanceClient(ticketShopClient);
+        performanceClient.createEvents(100, 1000);
+        performanceClient.createCustomers(10);
+        performanceClient.buyTickets(1);
+        performanceClient.createEvents(100, 2000);
+        performanceClient.buyTickets(2);
+        long end = System.currentTimeMillis();
+        System.out.println("Total time: " + (end - start) + "ms");
     }
 }
